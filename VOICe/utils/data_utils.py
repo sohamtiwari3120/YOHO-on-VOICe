@@ -1,8 +1,9 @@
 from specAugment import spec_augment_pytorch
+import pytorch_lightning as pl
 import csv
 import glob
 import numpy as np
-from typing import List
+from typing import List, Optional
 import soundfile as sf
 import math
 import numpy as np
@@ -10,7 +11,7 @@ import librosa
 import os
 from torch.utils.data import Dataset, DataLoader
 from subprocess import Popen, PIPE
-from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num
+from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size
 from tqdm import tqdm
 from types import file_paths_type
 
@@ -326,6 +327,26 @@ def generate_windows_and_anns(mode: str, env: str, sample_rate=sample_rate, wind
     return audio_windows, labels
 
 
+def generate_logmel_label_paths(mode, env):
+    """A function to simply return folder dirpaths where logmelspectrogram and label npy files will be stores.
+
+    Args:
+        mode (str): Either one of ['training', 'test', 'validation']
+        env (str): Either one of ['vehicle', 'outdoor', 'indoor']
+
+    Returns:
+        str: Folder directory where logmelspec npy files will be stored
+        str: Folder directory where label npy files will be stored
+    """
+    base_dir = os.path.join(os.path.dirname(
+        os.path.dirname(__file__)), 'data')
+    folder_path = os.path.join(
+        base_dir, f'{snr}-mono', f'{mode}-data', env)
+    logmel_path = os.path.join(folder_path, 'logmels_npy')
+    label_path = os.path.join(folder_path, 'labels_npy')
+    return logmel_path, label_path
+
+
 def save_logmelspec_and_labels(mode, env, audio_windows, labels, snr=snr):
     """To save the generated logmelspecs and compatible annotations in npy format.
 
@@ -345,12 +366,7 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, snr=snr):
     if mode not in data_mode:
         raise Exception('Invalid data mode.')
 
-    base_dir = os.path.join(os.path.dirname(
-        os.path.dirname(__file__)), 'data')
-    folder_path = os.path.join(
-        base_dir, f'{snr}-mono', f'{mode}-data', env)
-    logmel_path = os.path.join(folder_path, 'logmels_npy')
-    label_path = os.path.join(folder_path, 'labels_npy')
+    logmel_path, label_path = generate_logmel_label_paths(mode, env)
     os.makedirs(logmel_path, exist_ok=True)
     os.makedirs(label_path, exist_ok=True)
 
@@ -366,23 +382,26 @@ class VOICeDataset(Dataset):
     """Custom PyTorch Dataset class for VOICe dataset.
     """
 
-    def __init__(self, mode: str, logmel_path: str, label_path: str, spec_transform=False):
+    def __init__(self, mode: str, env: str, spec_transform=False):
         """Initialises the VOICe dataset class to load data for given mode and env. (the logmel_path and label_path variables are env and mode specific.)
 
         Args:
             mode (str): One of ['training', 'test', 'validation']
-            logmel_path (str): Path to folder containing the saved logmel npy files
-            label_path (str): Path to folder containing the saved compatible annotations/label npy files.
+            env (str): Either one of ['vehicle', 'outdoor', 'indoor']
             spec_transform (bool, optional): SpecAugmentation for spectrograms performed if true. Defaults to False.
 
         Raises:
-            Exception: If invalid data mode chosen.
-        """
+        Exception: If invalid environment type chosen.
+        Exception: If invalid data mode
+    """
+        if env not in envs:
+            raise Exception('Invalid environment type.')
         if mode not in data_mode:
             raise Exception('Invalid data mode.')
+        self.env = env
         self.mode = mode
-        self.logmel_path = logmel_path
-        self.label_path = label_path
+        self.logmel_path, self.label_path = generate_logmel_label_paths(
+            self.mode, self.env)
         self.spec_transform = spec_transform
 
         self.logmel_npy = glob.glob(self.logmel_path+f'logmelspec-*.npy')
@@ -399,3 +418,32 @@ class VOICeDataset(Dataset):
             X = spec_augment_pytorch.spec_augment(X, time_warping_para=time_warping_para, frequency_masking_para=frequency_masking_para,
                                                   time_masking_para=time_masking_para, frequency_mask_num=frequency_mask_num, time_mask_num=time_mask_num)
         return X, y
+
+
+class VOICeDataModule(pl.LightningDataModule):
+    def __init__(self, env: str, batch_size=batch_size):
+        super().__init__()
+        if env not in envs:
+            raise Exception('Invalid environment type.')
+        self.env = env
+        self.batch_size = batch_size
+
+    def setup(self, stage: Optional[str] = None):
+
+        # Assign train/val datasets for use in dataloaders
+        if stage == "fit" or stage is None:
+            self.voice_train = VOICeDataset('training', self.env, True)
+            self.voice_val = VOICeDataset('validation', self.env, True)
+
+        # Assign test dataset for use in dataloader(s)
+        if stage == "test" or stage is None:
+            self.voice_test = VOICeDataset('test', self.env, True)
+
+    def train_dataloader(self):
+        return DataLoader(self.voice_train, batch_size=self.batch_size)
+
+    def val_dataloader(self):
+        return DataLoader(self.voice_val, batch_size=self.batch_size)
+
+    def test_dataloader(self):
+        return DataLoader(self.voice_test, batch_size=self.batch_size)

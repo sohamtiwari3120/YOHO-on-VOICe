@@ -14,6 +14,7 @@ def main():
             logger.info(f'Processing {mode}, {env} data.')
             audio_windows, labels = generate_windows_and_anns(mode, env)
             logmel_path, label_path = save_logmelspec_and_labels(mode, env, audio_windows, labels)
+            logger.info(f'For mode:{mode}, env:{env}')
             logger.info(f'Saved spectrograms in path: {logmel_path}')
             logger.info(f'Saved labels in path: {label_path}')
     logger.info(f'Finished processing entire dataset.')
