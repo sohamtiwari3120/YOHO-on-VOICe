@@ -1,7 +1,7 @@
 snr = '9dB'
 sample_rate = 44100
 window_len_secs = 2.56
-hop_len_secs = 1
+hop_len_secs = 1.96
 class_dict = {
     "babycry": 0,
     "gunshot": 1,
@@ -19,6 +19,13 @@ fmax = int(sample_rate/2)
 num_classes = 3
 learning_rate = 1e-3
 num_subwindows = 9
+
+# SpecAugment
+time_warping_para=80
+frequency_masking_para=8
+time_masking_para=25
+frequency_mask_num=1
+time_mask_num=2
 
 depthwise_layers = [
     # (layer_function, kernel, stride, num_filters)
