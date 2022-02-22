@@ -2,6 +2,7 @@ snr = '9dB'
 sample_rate = 44100
 window_len_secs = 2.56
 hop_len_secs = 1.96
+max_consecutive_event_silence = 1.0
 class_dict = {
     "babycry": 0,
     "gunshot": 1,

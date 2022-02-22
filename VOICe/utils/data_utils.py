@@ -311,12 +311,12 @@ def generate_windows_and_anns(mode: str, env: str, sample_rate=sample_rate, wind
     labels = []
 
     for i, audio_path in enumerate(file_paths[mode][env]):
-        audio_path = convert_path_to_mono(audio_path)
+        mono_audio_path = convert_path_to_mono(audio_path)
         audio_wins, window_ranges = construct_audio_windows(
-            audio_path, sample_rate, window_len_secs, hop_len_secs)
+            mono_audio_path, sample_rate, window_len_secs, hop_len_secs)
         audio_windows.extend(audio_wins)
 
-        ann_path = file_paths[mode][env][i].replace('.wav', '.txt')
+        ann_path = audio_path.replace('.wav', '.txt')
         for w in window_ranges:
             anns = extract_anns_for_audio_window(
                 ann_path, w[0], w[1], window_len_secs)
@@ -327,7 +327,7 @@ def generate_windows_and_anns(mode: str, env: str, sample_rate=sample_rate, wind
     return audio_windows, labels
 
 
-def generate_logmel_label_paths(mode, env):
+def get_logmel_label_paths(mode, env):
     """A function to simply return folder dirpaths where logmelspectrogram and label npy files will be stores.
 
     Args:
@@ -366,7 +366,7 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, snr=snr):
     if mode not in data_mode:
         raise Exception('Invalid data mode.')
 
-    logmel_path, label_path = generate_logmel_label_paths(mode, env)
+    logmel_path, label_path = get_logmel_label_paths(mode, env)
     os.makedirs(logmel_path, exist_ok=True)
     os.makedirs(label_path, exist_ok=True)
 
@@ -400,7 +400,7 @@ class VOICeDataset(Dataset):
             raise Exception('Invalid data mode.')
         self.env = env
         self.mode = mode
-        self.logmel_path, self.label_path = generate_logmel_label_paths(
+        self.logmel_path, self.label_path = get_logmel_label_paths(
             self.mode, self.env)
         self.spec_transform = spec_transform
 
@@ -411,7 +411,8 @@ class VOICeDataset(Dataset):
         return len(self.logmel_npy)
 
     def __getitem__(self, idx):
-        X = np.load(self.logmel_npy[idx])[:, None]
+        X = np.load(self.logmel_npy[idx])[None, :] # to convert (H, W) -> (C, H, W)
+        # (channels=1, height, width)
         y = np.load(self.label_npy[idx])
 
         if self.spec_transform and self.mode == 'training':
@@ -421,6 +422,8 @@ class VOICeDataset(Dataset):
 
 
 class VOICeDataModule(pl.LightningDataModule):
+    """PyTorch-Lightning data module for VOICe dataset.
+    """    
     def __init__(self, env: str, batch_size=batch_size):
         super().__init__()
         if env not in envs:
@@ -433,11 +436,11 @@ class VOICeDataModule(pl.LightningDataModule):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
             self.voice_train = VOICeDataset('training', self.env, True)
-            self.voice_val = VOICeDataset('validation', self.env, True)
+            self.voice_val = VOICeDataset('validation', self.env, False)
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
-            self.voice_test = VOICeDataset('test', self.env, True)
+            self.voice_test = VOICeDataset('test', self.env, False)
 
     def train_dataloader(self):
         return DataLoader(self.voice_train, batch_size=self.batch_size)

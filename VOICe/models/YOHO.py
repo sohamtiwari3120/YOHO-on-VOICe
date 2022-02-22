@@ -87,7 +87,7 @@ class YohoModel(LightningModule):
         x = self.block_final(x)
         return x
 
-    def training_step(self, batch, batch_idx) -> torch.Tensor:
+    def training_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
         sigmoid = F.sigmoid(logits)
@@ -96,3 +96,10 @@ class YohoModel(LightningModule):
 
     def configure_optimizers(self):
         return Adam(self.parameters(), lr=learning_rate)
+
+    def predict(self, x):
+        with torch.no_grad():
+            # x.shape (n, c, h, w)
+            logits = self(x).cpu()
+            y = F.sigmoid(logits)
+            return y
