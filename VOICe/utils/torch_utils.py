@@ -141,6 +141,11 @@ def predict_audio_path(model: "pl.LightningModule", audio_path: str):
 
 
 class MonitorSedF1Callback(Callback):
+    """PyTorch Lightning Callback for monitoring f1 scores for sed task and storing model weights for best f1 scores and best error rates.
+
+    Args:
+        Callback (pytorch_lightning.callbacks.Callback): PyTorch Lightning Callback base class
+    """    
     def __init__(self, env):
         super(MonitorSedF1Callback, self).__init__()
         self.best_f1 = 0.0

@@ -21,6 +21,8 @@ num_classes = 3
 learning_rate = 1e-3
 num_subwindows = 9
 batch_size = 32
+input_height = 257
+input_width = 40
 
 # SpecAugment
 time_warping_para=80

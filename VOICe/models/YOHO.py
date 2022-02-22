@@ -3,10 +3,10 @@ from torch.optim import Adam
 from torch.nn import functional as F
 from torch import nn
 from pytorch_lightning.core.lightning import LightningModule
-from typing import Any, List, Optional
+from typing import Any, List
 from utils.types import depthwise_layers_type
 from utils.torch_utils import compute_conv_output, loss_function
-from config import learning_rate
+from config import learning_rate, num_classes, input_height, input_width, depthwise_layers
 
 class YohoModel(LightningModule):
     """PyTorch (Lightning) model for YOHO algorithm
@@ -16,9 +16,9 @@ class YohoModel(LightningModule):
     """
 
     def __init__(self,
-                 depthwise_layers: depthwise_layers_type,
-                 num_classes: int,
-                 input_height: int, input_width: int,
+                 depthwise_layers: depthwise_layers_type = depthwise_layers,
+                 num_classes: int = num_classes,
+                 input_height: int = input_height, input_width: int = input_width,
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoModel, self).__init__(*args, **kwargs)
