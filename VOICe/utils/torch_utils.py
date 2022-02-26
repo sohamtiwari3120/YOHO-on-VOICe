@@ -1,3 +1,4 @@
+from ctypes import Union
 from typing import List, Optional, Tuple
 import os
 import numpy as np
@@ -8,11 +9,13 @@ from pytorch_lightning.callbacks import Callback
 from utils.evaluate_utils import compute_sed_f1_errorrate
 from utils.data_utils import file_paths, construct_audio_windows, convert_path_to_mono, get_log_melspectrogram
 
-def compute_conv_output(input_dim: int, dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:
+
+def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1,) -> int:
     """Auxiliary function to help calculate the resulting dimension after performing the convolution operation.
 
     Args:
         input_dim (int): Value of the input dimension
+        padding (Union[int, str, Tuple[int, int]], optional): Padding to be applied to input. Defaults to 'valid'.
         dilation (int, optional): kernel convolution dilation value. Defaults to 1.
         kernel (int, optional): kernel size. Defaults to 1.
         stride (int, optional): stride of convolution operation. Defaults to 1.
@@ -20,9 +23,61 @@ def compute_conv_output(input_dim: int, dilation: int = 1, kernel: int = 1, stri
     Returns:
         int: resulting output dimension after performing conv operation
     """
-    output_dim = np.floor((input_dim - dilation * (kernel - 1) - 1)/stride + 1) + 1
+    if isinstance(padding, str):
+        if padding == 'valid':
+            # i.e. no padding
+            output_dim = np.floor(
+                (input_dim - dilation * (kernel - 1) - 1)/stride + 1)
+        elif padding == 'same':
+            output_dim = np.ceil(input_dim/stride)
+        else:
+            raise Exception(
+                f"Invalid padding={padding} value. Allowed string values are 'same', 'valid'")
+    elif isinstance(padding, int):
+        output_dim = np.floor(
+            (input_dim + 2*padding - dilation*(kernel - 1) - 1)/stride + 1)
+    elif isinstance(padding, tuple):
+        if len(padding) == 2:
+            output_dim = np.floor(
+                (padding[0] + input_dim + padding[1] - dilation*(kernel - 1) - 1)/stride + 1)
+        else:
+            raise Exception(
+                f'Invalid padding={padding} tuple. Only provide tuple of length 2.')
+    else:
+        raise Exception(
+            f"Invalid padding={padding} value passed. Please provide either one of ['same', 'valid', <int>, (<int>, <int>)]")
+
     return output_dim
 
+
+def compute_padding_along_dim(input_dim: int, kernel: int = 1, stride: int = 1, padding: str = 'same') -> Tuple[int, int]:
+    
+    """Compute the amount of padding before and after along a particular dimension for an input tensor, for different types of padding.
+
+    Args:
+        input_dim (int): Size of input dimension
+        kernel (int, optional): Size of kernel along input_dimension. Defaults to 1.
+        stride (int, optional): Value of stride along input_dimension. Defaults to 1.
+        padding (str, optional): Different types of padding. One of 'valid' or 'same'. Defaults to 'same'.
+
+    Raises:
+        Exception: Invalid padding string value passed. Allowed string values are 'same', 'valid'.
+
+    Returns:
+        Tuple[int, int]: Tuple of padding values (padding_before, padding_after)
+    """    
+    if padding == 'same':
+        if (input_dim % stride == 0):
+          pad_along_dim = max(kernel - stride, 0)
+        else:
+          pad_along_dim = max(kernel - (input_dim % stride), 0)
+        pad_before = pad_along_dim // 2
+        pad_after = pad_along_dim - pad_before
+        return (int(pad_before), int(pad_after))
+    elif padding == 'valid':
+        return (0, 0)
+    else:
+        raise Exception(f"Invalid padding={padding} value. Allowed string values are 'same', 'valid'.")
 
 def loss_function(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     """Computes Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.

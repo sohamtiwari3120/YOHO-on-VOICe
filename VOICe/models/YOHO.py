@@ -3,9 +3,9 @@ from torch.optim import Adam
 from torch.nn import functional as F
 from torch import nn
 from pytorch_lightning.core.lightning import LightningModule
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 from utils.types import depthwise_layers_type
-from utils.torch_utils import compute_conv_output, loss_function
+from utils.torch_utils import compute_conv_output_dim, loss_function, compute_padding_along_dim
 from config import learning_rate, num_classes, input_height, input_width, depthwise_layers
 
 class YohoModel(LightningModule):
@@ -28,21 +28,26 @@ class YohoModel(LightningModule):
         self.input_height = input_height
         self.input_width = input_width
         output_width = self.input_width
+        output_height = self.input_height
         self.block_first = nn.Sequential(
             nn.Conv2d(1, 32, (3, 3), stride=2, bias=False),
             nn.BatchNorm2d(32, eps=1e-4),
             nn.ReLU()
         )
-        output_width = compute_conv_output(output_width, kernel=3, stride=2)
+        padding_left_right = compute_padding_along_dim(self.input_width, 3, 2, 'same')
+        padding_top_bottom = compute_padding_along_dim(self.input_height, 3, 2, 'same')
+        self.block_first_padding: Tuple[int, int, int, int] = (padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1]) #(padding_left, padding_right, padding_top, padding_bottom)
+        
+        output_width = compute_conv_output_dim(output_width, kernel=3, stride=2, padding=padding_left_right)
+        output_height = compute_conv_output_dim(output_height, kernel=3, stride=2, padding=padding_top_bottom)
 
         self.blocks_depthwise = nn.ModuleList([])
+        self.blocks_depthwise_padding: List[Tuple[int, int, int, int]] = []
         for i in range(len(self.depthwise_layers)):
             arr = self.depthwise_layers[i]
             if i > 0:
                 prev = self.depthwise_layers[i-1]
             kernel_size = arr[0]
-            kernel_size[0]-=1
-            kernel_size[1]-=1
             stride = arr[1]
             output_channels = arr[2]
             if i == 0:
@@ -50,9 +55,12 @@ class YohoModel(LightningModule):
             else:
                 input_channels = prev[2]
 
+            padding_left_right = compute_padding_along_dim(output_width, kernel_size[1], stride, 'same')
+            padding_top_bottom = compute_padding_along_dim(output_height, kernel_size[0], stride, 'same')
+            self.blocks_depthwise_padding.append((padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1]))
             self.blocks_depthwise.append(
                 nn.Sequential(
-                    nn.Conv2d(input_channels, input_channels, kernel_size, stride=stride, padding='same' if stride==1 else 'valid', groups=input_channels, bias=False),  # step 1
+                    nn.Conv2d(input_channels, input_channels, kernel_size, stride=stride, padding='valid', groups=input_channels, bias=False),  # step 1
                     nn.BatchNorm2d(input_channels, eps=1e-4),
                     nn.ReLU(),
                     nn.Conv2d(input_channels, output_channels,
@@ -63,12 +71,12 @@ class YohoModel(LightningModule):
                 )
             )
             # for step 1:
-            if stride>1:
-                output_width = compute_conv_output(
-                    output_width, kernel=kernel_size[1], stride=stride)
+            output_width = compute_conv_output_dim(output_width, kernel=kernel_size[1], stride=stride, padding=padding_top_bottom)
+            output_height = compute_conv_output_dim(output_height, kernel=kernel_size[0], stride=stride, padding=padding_top_bottom)
 
             # for step 2
             output_width = output_width  # since 1x1 conv with padding same and stride 1
+            output_height = output_height  # since 1x1 conv with padding same and stride 1
 
         # (batch_size, num_channels, height, width)
         num_channels_last_depthwise = self.depthwise_layers[-1][-1]
@@ -79,12 +87,13 @@ class YohoModel(LightningModule):
 
     def forward(self, x):
         x = x.float()
+        x = F.pad(x, self.block_first_padding)
         x = self.block_first(x)
         print(x.shape)
-        for block in self.blocks_depthwise:
+        for i, block in enumerate(self.blocks_depthwise):
+            x = F.pad(x, self.blocks_depthwise_padding[i])
+            x = block(x)    
             print(x.shape)
-            x = block(x)
-        # x = self.blocks_depthwise(x)
         batch_size, channels, height, width = x.size()
         x = torch.permute(x, (0, 1, 3, 2)).view(
             batch_size, channels*width, height)
