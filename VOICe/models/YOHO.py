@@ -1,5 +1,6 @@
 import torch
 from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn import functional as F
 from torch import nn
 from pytorch_lightning.core.lightning import LightningModule
@@ -114,7 +115,9 @@ class YohoModel(LightningModule):
         return loss
     
     def configure_optimizers(self):
-        return Adam(self.parameters(), lr=learning_rate)
+        opt = Adam(self.parameters(), lr=learning_rate)
+        lr_sched = ReduceLROnPlateau(opt, 'min', patience=5)
+        return [opt], [lr_sched]
 
     def predict(self, x):
         with torch.no_grad():
