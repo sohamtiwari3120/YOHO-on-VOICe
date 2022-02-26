@@ -1,5 +1,4 @@
-from ctypes import Union
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 import os
 import numpy as np
 import torch

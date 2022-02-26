@@ -3,7 +3,7 @@ from torch.optim import Adam
 from torch.nn import functional as F
 from torch import nn
 from pytorch_lightning.core.lightning import LightningModule
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from utils.torch_utils import compute_conv_output_dim, loss_function, compute_padding_along_dim
 from config import learning_rate, num_classes, input_height, input_width, depthwise_layers
