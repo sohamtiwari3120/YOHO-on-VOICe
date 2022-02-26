@@ -12,8 +12,8 @@ def main(args):
     logger.info(f'Starting training of model for {env} audio.')
     model = YohoModel()
     trainer = Trainer(callbacks=[MonitorSedF1Callback(env)], devices="auto", accelerator="auto")
-    indoor_voice_dm = VOICeDataModule(env)
-    trainer.fit(model, indoor_voice_dm)
+    voice_dm = VOICeDataModule(env)
+    trainer.fit(model, voice_dm)
     logger.info(f'Finished training of model for {env} audio.')
 
 

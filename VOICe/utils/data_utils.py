@@ -434,7 +434,7 @@ class VOICeDataModule(pl.LightningDataModule):
 
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
-            self.voice_train = VOICeDataset('training', self.env, True)
+            self.voice_train = VOICeDataset('training', self.env, False)
             self.voice_val = VOICeDataset('validation', self.env, False)
 
         # Assign test dataset for use in dataloader(s)
