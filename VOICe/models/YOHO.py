@@ -85,7 +85,7 @@ class YohoModel(LightningModule):
         )
 
     def forward(self, x):
-        x = x.astype(float)
+        x = x.float()
         x = F.pad(x, self.block_first_padding)
         x = self.block_first(x)
         for i, block in enumerate(self.blocks_depthwise):
@@ -100,7 +100,7 @@ class YohoModel(LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        sigmoid = F.sigmoid(logits)
+        sigmoid = torch.sigmoid(logits)
         loss = loss_function(y, sigmoid)
         self.log("train_loss", loss)
         return loss
@@ -108,7 +108,7 @@ class YohoModel(LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        sigmoid = F.sigmoid(logits)
+        sigmoid = torch.sigmoid(logits)
         loss = loss_function(y, sigmoid)
         self.log("validation_loss", loss)
         return loss
@@ -119,6 +119,7 @@ class YohoModel(LightningModule):
     def predict(self, x):
         with torch.no_grad():
             # x.shape (n, c, h, w)
+            x = torch.Tensor(x).to(self.device)
             logits = self(x).cpu()
-            y = F.sigmoid(logits)
+            y = torch.sigmoid(logits)
             return y
