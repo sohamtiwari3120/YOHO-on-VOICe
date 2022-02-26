@@ -3,7 +3,7 @@ from torch.optim import Adam
 from torch.nn import functional as F
 from torch import nn
 from pytorch_lightning.core.lightning import LightningModule
-from typing import Any, List
+from typing import Any, List, Optional
 from utils.types import depthwise_layers_type
 from utils.torch_utils import compute_conv_output, loss_function
 from config import learning_rate, num_classes, input_height, input_width, depthwise_layers
@@ -19,6 +19,7 @@ class YohoModel(LightningModule):
                  depthwise_layers: depthwise_layers_type = depthwise_layers,
                  num_classes: int = num_classes,
                  input_height: int = input_height, input_width: int = input_width,
+                 logger:Optional['loguru.logger'] = None,
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoModel, self).__init__(*args, **kwargs)
@@ -27,20 +28,21 @@ class YohoModel(LightningModule):
         self.input_height = input_height
         self.input_width = input_width
         output_width = self.input_width
-
         self.block_first = nn.Sequential(
-            nn.Conv2d(1, 32, (3, 3), 2, bias=False),
+            nn.Conv2d(1, 32, (3, 3), stride=2, bias=False),
             nn.BatchNorm2d(32, eps=1e-4),
             nn.ReLU()
         )
         output_width = compute_conv_output(output_width, kernel=3, stride=2)
 
-        self.blocks_depthwise: List[nn.Module] = []
+        self.blocks_depthwise = nn.ModuleList([])
         for i in range(len(self.depthwise_layers)):
             arr = self.depthwise_layers[i]
             if i > 0:
                 prev = self.depthwise_layers[i-1]
             kernel_size = arr[0]
+            kernel_size[0]-=1
+            kernel_size[1]-=1
             stride = arr[1]
             output_channels = arr[2]
             if i == 0:
@@ -50,8 +52,7 @@ class YohoModel(LightningModule):
 
             self.blocks_depthwise.append(
                 nn.Sequential(
-                    nn.Conv2d(input_channels, input_channels, kernel_size, stride,
-                              'same', groups=input_channels, bias=False),  # step 1
+                    nn.Conv2d(input_channels, input_channels, kernel_size, stride=stride, padding='same' if stride==1 else 'valid', groups=input_channels, bias=False),  # step 1
                     nn.BatchNorm2d(input_channels, eps=1e-4),
                     nn.ReLU(),
                     nn.Conv2d(input_channels, output_channels,
@@ -62,11 +63,9 @@ class YohoModel(LightningModule):
                 )
             )
             # for step 1:
-            if stride == 1:
-                output_width = output_width
-            else:
+            if stride>1:
                 output_width = compute_conv_output(
-                    output_width, kernel=kernel_size, stride=stride)
+                    output_width, kernel=kernel_size[1], stride=stride)
 
             # for step 2
             output_width = output_width  # since 1x1 conv with padding same and stride 1
@@ -74,13 +73,18 @@ class YohoModel(LightningModule):
         # (batch_size, num_channels, height, width)
         num_channels_last_depthwise = self.depthwise_layers[-1][-1]
         self.block_final = nn.Sequential(
-            nn.Conv1d(output_width * num_channels_last_depthwise,
+            nn.Conv1d(int(output_width * num_channels_last_depthwise),
                       3*self.num_classes, 1)
         )
 
     def forward(self, x):
+        x = x.float()
         x = self.block_first(x)
-        x = self.blocks_depthwise(x)
+        print(x.shape)
+        for block in self.blocks_depthwise:
+            print(x.shape)
+            x = block(x)
+        # x = self.blocks_depthwise(x)
         batch_size, channels, height, width = x.size()
         x = torch.permute(x, (0, 1, 3, 2)).view(
             batch_size, channels*width, height)
@@ -92,8 +96,17 @@ class YohoModel(LightningModule):
         logits = self(x)
         sigmoid = F.sigmoid(logits)
         loss = loss_function(y, sigmoid)
+        self.log("train_loss", loss)
         return loss
-
+    
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        sigmoid = F.sigmoid(logits)
+        loss = loss_function(y, sigmoid)
+        self.log("validation_loss", loss)
+        return loss
+    
     def configure_optimizers(self):
         return Adam(self.parameters(), lr=learning_rate)
 

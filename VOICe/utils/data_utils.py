@@ -1,4 +1,4 @@
-from specAugment import spec_augment_pytorch
+import librosa
 import pytorch_lightning as pl
 import csv
 import glob
@@ -7,28 +7,17 @@ from typing import List, Optional
 import soundfile as sf
 import math
 import numpy as np
-import librosa
 import os
 from torch.utils.data import Dataset, DataLoader
 from subprocess import Popen, PIPE
-from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size
+from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers
 from tqdm import tqdm
-from types import file_paths_type
+from utils.types import file_paths_type
 
 envs = ['vehicle', 'outdoor', 'indoor']
 data_mode = ['training', 'test', 'validation']
 
 file_paths: file_paths_type = {}
-
-
-for mode in data_mode:
-    file_paths[mode] = {}
-    base_path = os.path.join(os.path.dirname(
-        os.path.dirname(__file__)), 'data', snr)
-    for e in envs:
-        file_paths[mode][e] = [base_path + p[0]
-                               for p in read_annotation(os.path.join(base_path, f"{e}_source_{mode}.txt"))]
-
 
 def read_annotation(filepath):
     """Reads and returns the annotations in filepath
@@ -45,6 +34,14 @@ def read_annotation(filepath):
         for row in spamreader:
             events.append(row)
     return events
+
+for mode in data_mode:
+    file_paths[mode] = {}
+    base_path = os.path.join(os.path.dirname(
+        os.path.dirname(__file__)), 'data', snr)
+    for e in envs:
+        file_paths[mode][e] = [base_path + '/' + p[0]
+                               for p in read_annotation(os.path.join(base_path, f"{e}_source_{mode}.txt"))]
 
 
 def convert_to_mono():
@@ -63,7 +60,7 @@ def convert_to_mono():
     # conversion to mono
     for sound in tqdm(training_files+test_files+validation_files):
         temp_file = convert_path_to_mono(sound)
-        command = command = "sox " + sound + " " + temp_file + " channels 1"
+        command = "sox " + sound + " " + temp_file + " channels 1"
         p = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
         output, err = p.communicate()
 
@@ -90,8 +87,9 @@ def construct_audio_windows(audio_path, sample_rate=sample_rate, window_len_secs
     win_len = int(sample_rate*window_len_secs)
     hop_len = int(sample_rate*hop_len_secs)
 
-    a, _ = sf.read(audio_path, samplerate=sample_rate)
-
+    a, sr = sf.read(audio_path)
+    if sr!=sample_rate:
+        raise f'sr does not match sample_rate={sample_rate}hz!'
     if a.shape[0] < win_len:
         a_padded = np.zeros((win_len, ))
         a_padded[0:a.shape[0]] = a
@@ -404,8 +402,8 @@ class VOICeDataset(Dataset):
             self.mode, self.env)
         self.spec_transform = spec_transform
 
-        self.logmel_npy = glob.glob(self.logmel_path+f'logmelspec-*.npy')
-        self.label_npy = glob.glob(self.label_path+f'label-*.npy')
+        self.logmel_npy = glob.glob(self.logmel_path+f'/logmelspec-*.npy')
+        self.label_npy = glob.glob(self.label_path+f'/label-*.npy')
 
     def __len__(self):
         return len(self.logmel_npy)
@@ -418,7 +416,7 @@ class VOICeDataset(Dataset):
         if self.spec_transform and self.mode == 'training':
             X = spec_augment_pytorch.spec_augment(X, time_warping_para=time_warping_para, frequency_masking_para=frequency_masking_para,
                                                   time_masking_para=time_masking_para, frequency_mask_num=frequency_mask_num, time_mask_num=time_mask_num)
-        return X, y
+        return X.astype(float), y
 
 
 class VOICeDataModule(pl.LightningDataModule):
@@ -443,10 +441,10 @@ class VOICeDataModule(pl.LightningDataModule):
             self.voice_test = VOICeDataset('test', self.env, False)
 
     def train_dataloader(self):
-        return DataLoader(self.voice_train, batch_size=self.batch_size)
+        return DataLoader(self.voice_train, batch_size=self.batch_size, num_workers=num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.voice_val, batch_size=self.batch_size)
+        return DataLoader(self.voice_val, batch_size=self.batch_size, num_workers=num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.voice_test, batch_size=self.batch_size)
+        return DataLoader(self.voice_test, batch_size=self.batch_size, num_workers=num_workers)

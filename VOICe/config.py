@@ -20,9 +20,10 @@ fmax = int(sample_rate/2)
 num_classes = 3
 learning_rate = 1e-3
 num_subwindows = 9
-batch_size = 32
+batch_size = 16
 input_height = 257
 input_width = 40
+num_workers = 8
 
 # SpecAugment
 time_warping_para=80

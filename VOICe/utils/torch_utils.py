@@ -1,12 +1,12 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import os
 import numpy as np
 import torch
 from config import num_classes, window_len_secs, num_classes, num_subwindows, rev_class_dict, max_consecutive_event_silence, snr
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
-from evaluate_utils import compute_sed_f1_errorrate
-from data_utils import file_paths, construct_audio_windows, convert_path_to_mono, get_log_melspectrogram
+from utils.evaluate_utils import compute_sed_f1_errorrate
+from utils.data_utils import file_paths, construct_audio_windows, convert_path_to_mono, get_log_melspectrogram
 
 def compute_conv_output(input_dim: int, dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:
     """Auxiliary function to help calculate the resulting dimension after performing the convolution operation.
@@ -20,7 +20,7 @@ def compute_conv_output(input_dim: int, dilation: int = 1, kernel: int = 1, stri
     Returns:
         int: resulting output dimension after performing conv operation
     """
-    output_dim = np.floor((input_dim - dilation * (kernel - 1) - 1)/stride + 1)
+    output_dim = np.floor((input_dim - dilation * (kernel - 1) - 1)/stride + 1) + 1
     return output_dim
 
 
@@ -47,7 +47,7 @@ def loss_function(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     return torch.sum(squared_difference, dim=[-1, -2])
 
 
-def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: float = window_len_secs, num_subwindows: int = num_subwindows, num_classes: int = num_classes, win_ranges: Optional[List[List[float, float]]] = None) -> List[float, float, str]:
+def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: float = window_len_secs, num_subwindows: int = num_subwindows, num_classes: int = num_classes, win_ranges: Optional[List[List[float]]] = None) -> List[Tuple[float, float, str]]:
     """Converts model compatible annotations into human readable annotation, [event_start_time, event_end_time, event_name]. Note: 0<=event_start_time, event_end_time<=window_len_secs
 
     Args:
@@ -81,7 +81,7 @@ def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: flo
     return sound_events
 
 
-def merge_sound_events(sound_events: List[float, float, str], max_consecutive_event_silence: float = max_consecutive_event_silence) -> List[float, float, str]:
+def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecutive_event_silence: float = max_consecutive_event_silence) -> List[Tuple[float, float, str]]:
     """Function to merge consecutive annotations for the same event into one, and to decrease the precision of the predictions to 3rd decimal place.
 
     Args:

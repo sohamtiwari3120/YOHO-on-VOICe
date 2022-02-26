@@ -1,5 +1,5 @@
 from typing import List
-import sed_util
+import sed_eval
 import dcase_util
 
 
