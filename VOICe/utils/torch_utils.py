@@ -225,6 +225,8 @@ class MonitorSedF1Callback(Callback):
                     fp.write('\n'.join('{},{},{}'.format(round(x[0], 5), round(x[1], 5), x[2]) for x in unified_sound_events))
             
             curr_f1, curr_error = compute_sed_f1_errorrate(reference_files, estimated_files)
+            self.log('f1', curr_f1)
+            self.log('error_rate', curr_error)
 
             if curr_f1 > self.best_f1:
                 self.best_f1 = curr_f1
@@ -236,5 +238,6 @@ class MonitorSedF1Callback(Callback):
 
             print("F-measure: {:.3f} vs {:.3f}".format(curr_f1, self.best_f1))
             print("Error rate: {:.3f} vs {:.3f}".format(curr_error, self.best_error))
+            
 
             # Or print all metrics as reports
