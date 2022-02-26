@@ -10,7 +10,7 @@ from utils.evaluate_utils import compute_sed_f1_errorrate
 from utils.data_utils import file_paths, construct_audio_windows, convert_path_to_mono, get_log_melspectrogram
 
 
-def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1,) -> int:
+def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:
     """Auxiliary function to help calculate the resulting dimension after performing the convolution operation.
 
     Args:

@@ -19,7 +19,6 @@ class YohoModel(LightningModule):
                  depthwise_layers: depthwise_layers_type = depthwise_layers,
                  num_classes: int = num_classes,
                  input_height: int = input_height, input_width: int = input_width,
-                 logger:Optional['loguru.logger'] = None,
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoModel, self).__init__(*args, **kwargs)
