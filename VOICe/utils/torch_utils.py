@@ -128,7 +128,7 @@ def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: flo
                     if win_ranges is not None:
                         start += win_ranges[i][0]
                         end += win_ranges[i][0]
-                    events_curr_bin.append([start, end, rev_class_dict[k]])
+                    events_curr_bin.append([start.item(), end.item(), rev_class_dict[k]])
 
         sound_events += events_curr_bin
     return sound_events
