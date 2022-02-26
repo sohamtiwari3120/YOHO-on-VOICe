@@ -10,7 +10,10 @@ def main(args):
     env = args.env
     logger.add(f'train_{env}.log', rotation='500 KB')
     logger.info(f'Starting training of model for {env} audio.')
-    model = YohoModel()
+    if args.chkpt_path is not None:
+        model = YohoModel.load_from_checkpoint(args.chkpt_path)
+    else:
+        model = YohoModel()
     trainer = Trainer(callbacks=[MonitorSedF1Callback(env)], devices="auto", accelerator="auto")
     voice_dm = VOICeDataModule(env)
     trainer.fit(model, voice_dm)
@@ -21,6 +24,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='For making realtime predictons.')
     parser.add_argument('-e', '--env', type=str, default='indoor')
+    parser.add_argument('-cp', '--chkpt_path', type=str, default=None)
 
     args = parser.parse_args()
     main(args)

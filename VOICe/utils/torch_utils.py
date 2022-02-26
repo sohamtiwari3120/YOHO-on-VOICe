@@ -230,11 +230,11 @@ class MonitorSedF1Callback(Callback):
 
             if curr_f1 > self.best_f1:
                 self.best_f1 = curr_f1
-                trainer.save_checkpoint(f"./{snr}-mono/model-{self.env}-best-f1.h5")
+                trainer.save_checkpoint(f"./model_checkpoints/{snr}-mono/model-{self.env}-best-f1.ckpt")
 
             if curr_error < self.best_error:
                 self.best_error = curr_error
-                trainer.save_checkpoint(f"./{snr}-mono/model-{self.env}-best-error.h5")
+                trainer.save_checkpoint(f"./model_checkpoints/{snr}-mono/model-{self.env}-best-error.ckpt")
 
             print("F-measure: {:.3f} vs {:.3f}".format(curr_f1, self.best_f1))
             print("Error rate: {:.3f} vs {:.3f}".format(curr_error, self.best_error))
