@@ -12,7 +12,7 @@ class YohoModel(LightningModule):
     """PyTorch (Lightning) model for YOHO algorithm
 
     Args:
-        LightningModule ([type]): pytorch lightning class
+        LightningModule (LightningModule): pytorch lightning class
     """
 
     def __init__(self,
@@ -88,13 +88,11 @@ class YohoModel(LightningModule):
         x = x.float()
         x = F.pad(x, self.block_first_padding)
         x = self.block_first(x)
-        print(x.shape)
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
             x = block(x)    
-            print(x.shape)
         batch_size, channels, height, width = x.size()
-        x = torch.permute(x, (0, 1, 3, 2)).view(
+        x = torch.permute(x, (0, 1, 3, 2)).reshape(
             batch_size, channels*width, height)
         x = self.block_final(x)
         return x
