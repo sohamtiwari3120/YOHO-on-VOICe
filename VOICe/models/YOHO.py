@@ -133,7 +133,7 @@ class YohoModel(LightningModule):
             "optimizer": opt,
             "lr_scheduler": {
                 "scheduler": ReduceLROnPlateau(opt, 'min', patience=5),
-                "monitor": "val_loss",
+                "monitor": "validation_loss",
                 # If "monitor" references validation metrics, then "frequency" should be set to a
                 # multiple of "trainer.check_val_every_n_epoch".
             },

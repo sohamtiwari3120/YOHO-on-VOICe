@@ -12,8 +12,10 @@ def main(args):
     logger.info(f'Starting training of model for {env} audio.')
     if args.chkpt_path is not None:
         model = YohoModel.load_from_checkpoint(args.chkpt_path)
+        logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
         model = YohoModel()
+        logger.info(f'Starting a fresh model.')
     trainer = Trainer(callbacks=[MonitorSedF1Callback(env)], devices="auto", accelerator="auto")
     voice_dm = VOICeDataModule(env)
     trainer.fit(model, voice_dm)
