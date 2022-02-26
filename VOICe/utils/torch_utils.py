@@ -98,7 +98,7 @@ def loss_function(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     squared_difference = torch.multiply(
         squared_difference, probability_multiplier)  # element wise multiplication
     # Note the `axis=-1`
-    return torch.sum(squared_difference, dim=[-1, -2])
+    return torch.sum(squared_difference, dim=[-1, -2]).item()
 
 
 def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: float = window_len_secs, num_subwindows: int = num_subwindows, num_classes: int = num_classes, win_ranges: Optional[List[List[float]]] = None) -> List[Tuple[float, float, str]]:
