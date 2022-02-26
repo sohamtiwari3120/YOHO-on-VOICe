@@ -13,6 +13,7 @@ from subprocess import Popen, PIPE
 from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers
 from tqdm import tqdm
 from utils.types import file_paths_type
+from utils.SpecAugment import spec_augment_pytorch
 
 envs = ['vehicle', 'outdoor', 'indoor']
 data_mode = ['training', 'test', 'validation']
