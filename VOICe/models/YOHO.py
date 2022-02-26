@@ -85,7 +85,6 @@ class YohoModel(LightningModule):
         )
 
     def forward(self, x):
-        x = x.float()
         x = F.pad(x, self.block_first_padding)
         x = self.block_first(x)
         for i, block in enumerate(self.blocks_depthwise):
