@@ -18,7 +18,7 @@ fmin = 0
 fmax = int(sample_rate/2)
 
 num_classes = 3
-learning_rate = 1e-3
+learning_rate = 5e-3
 num_subwindows = 9
 batch_size = 16
 input_height = 257
