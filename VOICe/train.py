@@ -4,6 +4,7 @@ from utils.data_utils import VOICeDataModule
 from pytorch_lightning import Trainer
 from utils.torch_utils import MonitorSedF1Callback
 from loguru import logger
+from config import env
 
 @logger.catch
 def main(args):
@@ -25,7 +26,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='For making realtime predictons.')
-    parser.add_argument('-e', '--env', type=str, default='indoor')
+    parser.add_argument('-e', '--env', type=str, default=env)
     parser.add_argument('-cp', '--chkpt_path', type=str, default=None)
 
     args = parser.parse_args()

@@ -17,8 +17,9 @@ n_mels = 40
 fmin = 0
 fmax = int(sample_rate/2)
 
+env = 'indoor'
+learning_rate = 2e-3
 num_classes = 3
-learning_rate = 5e-3
 num_subwindows = 9
 batch_size = 16
 input_height = 257
