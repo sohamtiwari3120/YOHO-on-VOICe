@@ -18,7 +18,8 @@ def main(args):
     else:
         model = YohoModel()
         logger.info(f'Starting a fresh model.')
-    trainer = Trainer(callbacks=[MonitorSedF1Callback(env), LearningRateMonitor], devices="auto", accelerator="auto")
+    lr_monitor = LearningRateMonitor(logging_interval='epoch')
+    trainer = Trainer(callbacks=[MonitorSedF1Callback(env), lr_monitor], devices="auto", accelerator="auto")
     voice_dm = VOICeDataModule(env)
     trainer.fit(model, voice_dm)
     logger.info(f'Finished training of model for {env} audio.')
