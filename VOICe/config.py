@@ -22,16 +22,17 @@ learning_rate = 2e-3
 num_classes = 3
 num_subwindows = 9
 batch_size = 16
-input_height = 257
-input_width = 40
+# note, we are saving transpose of the logmelspecs
+input_height = 257 # hence 257 is actually the length of the time dimension before transpose
+input_width = 40 # hence 40 is actually the length of the frequency dimension (n_mels) before transpose
 num_workers = 8
 
 # SpecAugment
-time_warping_para=80
-frequency_masking_para=8
-time_masking_para=25
-frequency_mask_num=1
-time_mask_num=2
+time_warping_para=5
+frequency_masking_para=10
+time_masking_para=5
+frequency_mask_num=2
+time_mask_num=1
 
 depthwise_layers = [
     # (layer_function, kernel, stride, num_filters)
