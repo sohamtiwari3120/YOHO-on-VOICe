@@ -1,3 +1,4 @@
+from numpy import double
 import torch
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -20,7 +21,7 @@ class YohoModel(LightningModule):
     def __init__(self,
                  depthwise_layers: depthwise_layers_type = depthwise_layers,
                  num_classes: int = num_classes,
-                 input_height: int = input_height, input_width: int = input_width,
+                 input_height: int = input_height, input_width: int = input_width, learning_rate: double = learning_rate,
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoModel, self).__init__(*args, **kwargs)
@@ -28,6 +29,7 @@ class YohoModel(LightningModule):
         self.num_classes = num_classes
         self.input_height = input_height
         self.input_width = input_width
+        self.learning_rate = learning_rate
         output_width = self.input_width
         output_height = self.input_height
         self.block_first = nn.Sequential(
@@ -128,7 +130,7 @@ class YohoModel(LightningModule):
         return loss
 
     def configure_optimizers(self):
-        opt = Adam(self.parameters(), lr=learning_rate)
+        opt = Adam(self.parameters(), lr=self.learning_rate)
         return {
             "optimizer": opt,
             "lr_scheduler": {
