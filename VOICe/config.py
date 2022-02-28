@@ -18,7 +18,7 @@ fmin = 0
 fmax = int(sample_rate/2)
 
 env = 'indoor'
-learning_rate = 2e-3
+learning_rate = 1e-2
 num_classes = 3
 num_subwindows = 9
 batch_size = 16

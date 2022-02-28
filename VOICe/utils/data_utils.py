@@ -8,6 +8,7 @@ import soundfile as sf
 import math
 import numpy as np
 import os
+import torch
 from torch.utils.data import Dataset, DataLoader
 from subprocess import Popen, PIPE
 from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers
@@ -415,9 +416,13 @@ class VOICeDataset(Dataset):
         y = np.load(self.label_npy[idx])
 
         if self.spec_transform and self.mode == 'training':
-            X = spec_augment_pytorch.spec_augment(X, time_warping_para=time_warping_para, frequency_masking_para=frequency_masking_para,
+            X = spec_augment_pytorch.spec_augment(torch.tensor(X), time_warping_para=time_warping_para, frequency_masking_para=frequency_masking_para,
                                                   time_masking_para=time_masking_para, frequency_mask_num=frequency_mask_num, time_mask_num=time_mask_num)
-        return X.astype(float), y
+        if isinstance(X, torch.Tensor):
+            X = X.float()
+        elif isinstance(X, np.ndarray):
+            X = X.astype(float)
+        return X, y
 
 
 class VOICeDataModule(pl.LightningDataModule):
@@ -434,7 +439,7 @@ class VOICeDataModule(pl.LightningDataModule):
 
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
-            self.voice_train = VOICeDataset('training', self.env, True)
+            self.voice_train = VOICeDataset('training', self.env, False)
             self.voice_val = VOICeDataset('validation', self.env, False)
 
         # Assign test dataset for use in dataloader(s)
