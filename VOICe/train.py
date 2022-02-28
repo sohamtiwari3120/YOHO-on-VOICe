@@ -21,12 +21,14 @@ def main(args):
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     trainer = Trainer(callbacks=[MonitorSedF1Callback(env), lr_monitor], devices="auto", accelerator="auto")
     voice_dm = VOICeDataModule(env)
+    logger.info(f'Starting auto lr find of model for {env} audio.')
     lr_finder = trainer.tuner.lr_find(model, voice_dm)
+    logger.info(f'Finished auto lr find of model for {env} audio.')
     # Results can be found in
     lr_finder.results
     # Plot with
     fig = lr_finder.plot(suggest=True)
-    fig.save('lr_finder.plot.png')
+    fig.savefig('lr_finder.plot.png')
 
     # Pick point based on plot, or get suggestion
     new_lr = lr_finder.suggestion()
