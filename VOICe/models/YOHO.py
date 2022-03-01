@@ -111,6 +111,9 @@ class YohoModel(LightningModule):
         x = torch.permute(x, (0, 1, 3, 2)).reshape(
             batch_size, channels*width, height)
         x = self.block_final(x)
+        # Output: (N, C, L) = (N, 3*num_classes, num_subwindows)
+        # Stored label output format: (N, L, C) = (N, num_subwindows, 3*num_classes)
+        x = torch.permute(x, (0, 2, 1))
         return x
 
     def training_step(self, batch, batch_idx):
