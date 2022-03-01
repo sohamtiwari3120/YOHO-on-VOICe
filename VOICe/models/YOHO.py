@@ -7,8 +7,8 @@ from torch import nn
 from pytorch_lightning.core.lightning import LightningModule
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
-from utils.torch_utils import compute_conv_output_dim, loss_function, compute_padding_along_dim
-from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor
+from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, loss_function_str
+from utils.torch_utils import *
 
 
 class YohoModel(LightningModule):
@@ -21,7 +21,7 @@ class YohoModel(LightningModule):
     def __init__(self,
                  depthwise_layers: depthwise_layers_type = depthwise_layers,
                  num_classes: int = num_classes,
-                 input_height: int = input_height, input_width: int = input_width, learning_rate: double = learning_rate,
+                 input_height: int = input_height, input_width: int = input_width, learning_rate: double = learning_rate, loss_function = eval(loss_function_str), 
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoModel, self).__init__(*args, **kwargs)
@@ -30,6 +30,7 @@ class YohoModel(LightningModule):
         self.input_height = input_height
         self.input_width = input_width
         self.learning_rate = learning_rate
+        self.loss_function = loss_function
         output_width = self.input_width
         output_height = self.input_height
         self.block_first = nn.Sequential(
@@ -120,7 +121,7 @@ class YohoModel(LightningModule):
         x, y = batch
         logits = self(x)
         sigmoid = torch.sigmoid(logits)
-        loss = loss_function(y, sigmoid)
+        loss = self.loss_function(y, sigmoid)
         self.log("train_loss", loss, prog_bar=True)
         return loss
 
@@ -128,7 +129,7 @@ class YohoModel(LightningModule):
         x, y = batch
         logits = self(x)
         sigmoid = torch.sigmoid(logits)
-        loss = loss_function(y, sigmoid)
+        loss = self.loss_function(y, sigmoid)
         self.log("validation_loss", loss, prog_bar=True)
         return loss
 

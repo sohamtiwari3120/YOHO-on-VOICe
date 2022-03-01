@@ -1,3 +1,4 @@
+from tkinter.tix import Tree
 from typing import List, Optional, Tuple, Union
 import os
 import numpy as np
@@ -78,26 +79,37 @@ def compute_padding_along_dim(input_dim: int, kernel: int = 1, stride: int = 1, 
     else:
         raise Exception(f"Invalid padding={padding} value. Allowed string values are 'same', 'valid'.")
 
-def loss_function(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
-    """Computes Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.
+def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> torch.Tensor:
+    """Computes Mean Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.
+
+    Args:
+        y_true (torch.Tensor): true values
+        y_pred (torch.Tensor): predicted values
+        weighted (bool): Whether to multiply squared difference by probability of sound event occuring or not.
+    """
+    # y.shape: (NUM_BATCHES, CHANNELS, 3*NUM_CLASSES) / (NUM_BATCHES, 9, 9)
+    squared_difference = torch.square(y_true - y_pred)
+    if weighted:
+        probability_multiplier = torch.ones_like(squared_difference)
+        for i in range(num_classes):
+            # multiply squared difference of start time for event i by the prob of event i occuring
+            probability_multiplier[:, :, 3*i+1] = y_true[:, :, 3*i]
+            # multiply squared difference of end time for event i by the prob of event i occuring
+            probability_multiplier[:, :, 3*i+2] = y_true[:, :, 3*i]
+
+        squared_difference = torch.multiply(
+            squared_difference, probability_multiplier)  # element wise multiplication
+        # Note the `axis=-1`
+    return squared_difference.mean()
+
+def weighted_mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+    """Computes Weighted Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.
 
     Args:
         y_true (torch.Tensor): true values
         y_pred (torch.Tensor): predicted values
     """
-    # y.shape: (NUM_BATCHES, CHANNELS, 3*NUM_CLASSES) / (NUM_BATCHES, 9, 9)
-    squared_difference = torch.square(y_true - y_pred)
-    probability_multiplier = torch.ones_like(squared_difference)
-    for i in range(num_classes):
-        # multiply squared difference of start time for event i by the prob of event i occuring
-        probability_multiplier[:, :, 3*i+1] = y_true[:, :, 3*i]
-        # multiply squared difference of end time for event i by the prob of event i occuring
-        probability_multiplier[:, :, 3*i+2] = y_true[:, :, 3*i]
-
-    squared_difference = torch.multiply(
-        squared_difference, probability_multiplier)  # element wise multiplication
-    # Note the `axis=-1`
-    return torch.sum(squared_difference, dim=[-1, -2]).mean()
+    return mse(y_true, y_pred, True)
 
 
 def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: float = window_len_secs, num_subwindows: int = num_subwindows, num_classes: int = num_classes, win_ranges: Optional[List[List[float]]] = None) -> List[Tuple[float, float, str]]:
