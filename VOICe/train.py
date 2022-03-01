@@ -21,21 +21,22 @@ def main(args):
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     trainer = Trainer(callbacks=[MonitorSedF1Callback(env), lr_monitor], devices=devices, accelerator=accelerator, gradient_clip_val=gradient_clip_val)
     voice_dm = VOICeDataModule(env)
-    logger.info(f'Starting auto lr find of model for {env} audio.')
-    lr_finder = trainer.tuner.lr_find(model, voice_dm)
-    logger.info(f'Finished auto lr find of model for {env} audio.')
-    # Results can be found in
-    lr_finder.results
-    # Plot with
-    fig = lr_finder.plot(suggest=True)
-    fig.savefig('lr_finder.plot.png')
 
-    # Pick point based on plot, or get suggestion
-    new_lr = lr_finder.suggestion()
-    logger.info(f'new_lr = {new_lr}')
-    # update hparams of the model
-    model.hparams.learning_rate = new_lr
-
+    if args.auto_lr:
+        logger.info(f'Starting auto lr find of model for {env} audio.')
+        lr_finder = trainer.tuner.lr_find(model, voice_dm)
+        logger.info(f'Finished auto lr find of model for {env} audio.')
+        # Results can be found in
+        lr_finder.results
+        # Plot with
+        fig = lr_finder.plot(suggest=True)
+        fig.savefig('lr_finder.plot.png')
+        # Pick point based on plot, or get suggestion
+        new_lr = lr_finder.suggestion()
+        logger.info(f'new_lr = {new_lr}')
+        # update hparams of the model
+        model.hparams.learning_rate = new_lr
+        
     # Fit model
     trainer.fit(model, voice_dm)
     logger.info(f'Finished training of model for {env} audio.')
@@ -46,6 +47,7 @@ if __name__ == '__main__':
         description='For making realtime predictons.')
     parser.add_argument('-e', '--env', type=str, default=env)
     parser.add_argument('-cp', '--chkpt_path', type=str, default=None)
+    parser.add_argument('-alr', '--auto_lr', type=bool, default=False)
 
     args = parser.parse_args()
     main(args)
