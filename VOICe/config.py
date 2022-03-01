@@ -33,6 +33,14 @@ frequency_masking_para=10
 time_masking_para=5
 frequency_mask_num=2
 time_mask_num=1
+# ReduceLRonPlateau
+mode = 'min'
+patience = 5
+factor = 0.5
+# trainer params
+devices="auto"
+accelerator="auto"
+gradient_clip_val=0.5
 
 depthwise_layers = [
     # (layer_function, kernel, stride, num_filters)

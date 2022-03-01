@@ -5,7 +5,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor
 from utils.torch_utils import MonitorSedF1Callback
 from loguru import logger
-from config import env
+from config import env, devices, accelerator, gradient_clip_val
 
 @logger.catch
 def main(args):
@@ -19,7 +19,7 @@ def main(args):
         model = YohoModel()
         logger.info(f'Starting a fresh model.')
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
-    trainer = Trainer(callbacks=[MonitorSedF1Callback(env), lr_monitor], devices="auto", accelerator="auto")
+    trainer = Trainer(callbacks=[MonitorSedF1Callback(env), lr_monitor], devices=devices, accelerator=accelerator, gradient_clip_val=gradient_clip_val)
     voice_dm = VOICeDataModule(env)
     logger.info(f'Starting auto lr find of model for {env} audio.')
     lr_finder = trainer.tuner.lr_find(model, voice_dm)

@@ -8,7 +8,7 @@ from pytorch_lightning.core.lightning import LightningModule
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from utils.torch_utils import compute_conv_output_dim, loss_function, compute_padding_along_dim
-from config import learning_rate, num_classes, input_height, input_width, depthwise_layers
+from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor
 
 
 class YohoModel(LightningModule):
@@ -134,7 +134,7 @@ class YohoModel(LightningModule):
         return {
             "optimizer": opt,
             "lr_scheduler": {
-                "scheduler": ReduceLROnPlateau(opt, 'min', patience=5),
+                "scheduler": ReduceLROnPlateau(opt, mode=mode, patience=patience, factor=factor),
                 "monitor": "validation_loss",
                 # If "monitor" references validation metrics, then "frequency" should be set to a
                 # multiple of "trainer.check_val_every_n_epoch".
