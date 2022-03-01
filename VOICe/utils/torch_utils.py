@@ -87,17 +87,17 @@ def loss_function(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     """
     # y.shape: (NUM_BATCHES, CHANNELS, 3*NUM_CLASSES) / (NUM_BATCHES, 9, 9)
     squared_difference = torch.square(y_true - y_pred)
-    # probability_multiplier = torch.ones_like(squared_difference)
-    # for i in range(num_classes):
-    #     # multiply squared difference of start time for event i by the prob of event i occuring
-    #     probability_multiplier[:, :, 3*i+1] = y_true[:, :, 3*i]
-    #     # multiply squared difference of end time for event i by the prob of event i occuring
-    #     probability_multiplier[:, :, 3*i+2] = y_true[:, :, 3*i]
+    probability_multiplier = torch.ones_like(squared_difference)
+    for i in range(num_classes):
+        # multiply squared difference of start time for event i by the prob of event i occuring
+        probability_multiplier[:, :, 3*i+1] = y_true[:, :, 3*i]
+        # multiply squared difference of end time for event i by the prob of event i occuring
+        probability_multiplier[:, :, 3*i+2] = y_true[:, :, 3*i]
 
-    # squared_difference = torch.multiply(
-    #     squared_difference, probability_multiplier)  # element wise multiplication
+    squared_difference = torch.multiply(
+        squared_difference, probability_multiplier)  # element wise multiplication
     # Note the `axis=-1`
-    return squared_difference.mean()
+    return torch.sum(squared_difference, dim=[-1, -2]).mean()
 
 
 def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: float = window_len_secs, num_subwindows: int = num_subwindows, num_classes: int = num_classes, win_ranges: Optional[List[List[float]]] = None) -> List[Tuple[float, float, str]]:
