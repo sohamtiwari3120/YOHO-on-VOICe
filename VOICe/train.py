@@ -35,7 +35,7 @@ def main(args):
         new_lr = lr_finder.suggestion()
         logger.info(f'new_lr = {new_lr}')
         # update hparams of the model
-        model.hparams.learning_rate = new_lr
+        model.learning_rate = new_lr
         
     # Fit model
     trainer.fit(model, voice_dm)
