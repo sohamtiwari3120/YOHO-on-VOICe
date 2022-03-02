@@ -197,15 +197,15 @@ def predict_audio_path(model: "pl.LightningModule", audio_path: str):
         List[float, float, str]: List of merged sound events with less precise sound boundaries.
     """
     audio_wins, window_ranges = construct_audio_windows(audio_path)
-    ann_path = audio_path.replace('.wav', '.txt')
-    labels = []
-    for w in window_ranges:
-        anns = extract_anns_for_audio_window(
-            ann_path, w[0], w[1], window_len_secs)
-        compatible_ann = get_model_compatible_anns(
-            anns, window_len_secs, num_subwindows)
-        labels.append(compatible_ann)
-    print(labels)
+    # ann_path = audio_path.replace('.wav', '.txt')
+    # labels = []
+    # for w in window_ranges:
+    #     anns = extract_anns_for_audio_window(
+    #         ann_path, w[0], w[1], window_len_secs)
+    #     compatible_ann = get_model_compatible_anns(
+    #         anns, window_len_secs, num_subwindows)
+    #     labels.append(compatible_ann)
+    # print(labels)
     logmels = np.array([get_log_melspectrogram(audio_win).T[None, :]
                        for audio_win in audio_wins])
     preds = model.predict(logmels)
