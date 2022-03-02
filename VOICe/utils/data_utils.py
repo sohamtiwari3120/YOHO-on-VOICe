@@ -74,7 +74,7 @@ def convert_to_mono():
 
 
 def construct_audio_windows(audio_path, sample_rate=sample_rate, window_len_secs=window_len_secs, hop_len_secs=hop_len_secs):
-    """chunks audio files into windows with hop_len, and returns these chunked audio files as well as the start and end time of each window.
+    """chunks audio files into windows of length window_len with hop_len, and returns these chunked audio files as well as the start and end time of each window.
 
     Args:
         audio_path (str): path of audio file
@@ -91,7 +91,7 @@ def construct_audio_windows(audio_path, sample_rate=sample_rate, window_len_secs
 
     a, sr = sf.read(audio_path)
     if sr!=sample_rate:
-        raise f'sr does not match sample_rate={sample_rate}hz!'
+        raise f'sr does not match sample_rate={sample_rate}hz for audio: {audio_path}!'
     if a.shape[0] < win_len:
         a_padded = np.zeros((win_len, ))
         a_padded[0:a.shape[0]] = a
@@ -147,15 +147,15 @@ def extract_anns_for_audio_window(annotation_path, window_start_secs, window_end
         # grouping all annotations by their class
         # {
         #     "baby":[
-        #             [1.1, 1.3, 'baby'],
-        #             [1.2, 1.4, 'baby'],
-        #             [0.1, 1.2, 'baby'],
-        #             [1.1, 2.2, 'baby'],
+        #             [0.1, 0.3, 'baby'],
+        #             [0.2, 0.4, 'baby'],
+        #             [0.1, 0.2, 'baby'],
+        #             [0.0, 1.0, 'baby'],
         #     ],
         #     "gun":[
-        #             [1.1, 1.2, 'baby'],
-        #             [0.1, 1.2, 'baby'],
-        #             [1.1, 2.2, 'baby'],
+        #             [0.1, 0.3, 'gun'],
+        #             [0.2, 0.4, 'gun'],
+        #             [0.7, 0.9, 'gun'],
         #     ],
         #     ....
         # }
@@ -178,18 +178,14 @@ def extract_anns_for_audio_window(annotation_path, window_start_secs, window_end
         all_events += curr_events
         # all events is corrected dictionary in the form of 2d list, removing distinc
         #     all_events = [
-        #             [1.1, 1.3, 'baby'],
-        #             [1.2, 1.4, 'baby'],
-        #             [0.1, 1.2, 'baby'],
-        #             [1.1, 2.2, 'baby'],
+        #             [0.0, 1.0, 'baby'],
         #                   ...
-        #             [1.1, 1.2, 'gun'],
-        #             [0.1, 1.2, 'gun'],
-        #             [1.1, 2.2, 'gun'],
+        #             [0.1, 0.4, 'gun'],
+        #             [0.7, 0.9, 'gun'],
         #                   ...
-        #             [1.1, 1.2, 'breaking'],
-        #             [0.1, 1.2, 'breaking'],
-        #             [1.1, 2.2, 'breaking'],
+        #             [0.1, 0.4, 'breaking'],
+        #             [0.5, 0.6, 'breaking'],
+        #             [0.7, 0.9, 'breaking'],
         #     ],
     for i in range(len(all_events)):
         all_events[i][0] = round(all_events[i][0], 3)
