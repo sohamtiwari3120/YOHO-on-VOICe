@@ -2,6 +2,7 @@ import argparse
 from models.YOHO import YohoModel
 from utils.torch_utils import predict_audio_path
 from loguru import logger
+from config import env
 
 @logger.catch
 def main(args):
