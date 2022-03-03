@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 import csv
 import glob
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import soundfile as sf
 import math
 import numpy as np
@@ -11,8 +11,7 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 from subprocess import Popen, PIPE
-from utils.torch_utils import merge_sound_events
-from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers
+from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers, rev_class_dict, max_consecutive_event_silence
 from tqdm import tqdm
 from utils.types import file_paths_type
 from utils.SpecAugment import spec_augment_pytorch
@@ -110,6 +109,69 @@ def construct_audio_windows(audio_path, sample_rate=sample_rate, window_len_secs
     # chunks large audio file into windows, and gives the start and end time of each window
     return a_ex, win_ranges
 
+def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecutive_event_silence: float = max_consecutive_event_silence) -> List[Tuple[float, float, str]]:
+    """Function to merge consecutive annotations for the same event into one, and to decrease the precision of the predictions to 3rd decimal place.
+
+    Args:
+        sound_events (List[float, float, str]): List of human readable predictions.
+        max_consecutive_event_silence (float, optional): Maximum time difference between two events of same class for them to be merged. Defaults to max_consecutive_event_silence.
+
+    Returns:
+        List[float, float, str]: List of merged sound events with less precise sound boundaries.
+    """
+    class_wise_events = {c: [] for c in rev_class_dict}
+    for event in sound_events:
+        class_wise_events[event[2]].append(event)
+    # grouping all annotations by their class
+    # {
+    #     "baby":[
+    #             [0.1, 0.3, 'baby'],
+    #             [0.2, 0.4, 'baby'],
+    #             [0.1, 0.2, 'baby'],
+    #             [0.0, 1.0, 'baby'],
+    #     ],
+    #     "gun":[
+    #             [0.1, 0.3, 'gun'],
+    #             [0.2, 0.4, 'gun'],
+    #             [0.7, 0.9, 'gun'],
+    #     ],
+    #     ....
+    # }
+    all_events = []
+
+    for k in rev_class_dict:
+        curr_events = class_wise_events[k]
+        count = 0
+        # skipping the last ann in that class to compare ann[i] and ann[i+1]
+        while count < len(curr_events) - 1:  # merging anns if reqd
+            if (curr_events[count][1] >= curr_events[count + 1][0]) or (curr_events[count + 1][0] - curr_events[count][1] <= max_consecutive_event_silence):
+                # merging two annotations for the same time period into 1
+                curr_events[count][1] = max(
+                    curr_events[count + 1][1], curr_events[count][1])
+                del curr_events[count + 1]
+            else:
+                count += 1
+
+        all_events += curr_events
+        # all events is corrected dictionary in the form of 2d list, removing distinc
+        #     all_events = [
+        #             [0.0, 1.0, 'baby'],
+        #                   ...
+        #             [0.1, 0.4, 'gun'],
+        #             [0.7, 0.9, 'gun'],
+        #                   ...
+        #             [0.1, 0.4, 'breaking'],
+        #             [0.5, 0.6, 'breaking'],
+        #             [0.7, 0.9, 'breaking'],
+        #     ],
+
+    for i in range(len(all_events)):
+        all_events[i][0] = round(all_events[i][0], 3)
+        all_events[i][1] = round(all_events[i][1], 3)
+
+    all_events.sort(key=lambda x: x[0])
+    # sorted all events by their start time, so can be possible that ann -> baby, gun,
+    return all_events
 
 def extract_anns_for_audio_window(annotation_path, window_start_secs, window_end_secs, window_len_secs=window_len_secs):
     """Given the annotation file, returns the annotations corresponding to the audio window in focus.

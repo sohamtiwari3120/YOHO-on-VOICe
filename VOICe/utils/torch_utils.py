@@ -3,12 +3,11 @@ from typing import List, Optional, Tuple, Union
 import os
 import numpy as np
 import torch
-from utils.data_utils import extract_anns_for_audio_window, get_model_compatible_anns
 from config import num_classes, window_len_secs, num_classes, num_subwindows, rev_class_dict, max_consecutive_event_silence, snr
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 from utils.evaluate_utils import compute_sed_f1_errorrate
-from utils.data_utils import file_paths, construct_audio_windows, convert_path_to_mono, get_log_melspectrogram
+from utils.data_utils import file_paths, construct_audio_windows, convert_path_to_mono, get_log_melspectrogram, merge_sound_events
 
 
 def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:
@@ -151,69 +150,7 @@ def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: flo
     return sound_events
 
 
-def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecutive_event_silence: float = max_consecutive_event_silence) -> List[Tuple[float, float, str]]:
-    """Function to merge consecutive annotations for the same event into one, and to decrease the precision of the predictions to 3rd decimal place.
 
-    Args:
-        sound_events (List[float, float, str]): List of human readable predictions.
-        max_consecutive_event_silence (float, optional): Maximum time difference between two events of same class for them to be merged. Defaults to max_consecutive_event_silence.
-
-    Returns:
-        List[float, float, str]: List of merged sound events with less precise sound boundaries.
-    """
-    class_wise_events = {c: [] for c in rev_class_dict}
-    for event in sound_events:
-        class_wise_events[event[2]].append(event)
-    # grouping all annotations by their class
-    # {
-    #     "baby":[
-    #             [0.1, 0.3, 'baby'],
-    #             [0.2, 0.4, 'baby'],
-    #             [0.1, 0.2, 'baby'],
-    #             [0.0, 1.0, 'baby'],
-    #     ],
-    #     "gun":[
-    #             [0.1, 0.3, 'gun'],
-    #             [0.2, 0.4, 'gun'],
-    #             [0.7, 0.9, 'gun'],
-    #     ],
-    #     ....
-    # }
-    all_events = []
-
-    for k in rev_class_dict:
-        curr_events = class_wise_events[k]
-        count = 0
-        # skipping the last ann in that class to compare ann[i] and ann[i+1]
-        while count < len(curr_events) - 1:  # merging anns if reqd
-            if (curr_events[count][1] >= curr_events[count + 1][0]) or (curr_events[count + 1][0] - curr_events[count][1] <= max_consecutive_event_silence):
-                # merging two annotations for the same time period into 1
-                curr_events[count][1] = max(
-                    curr_events[count + 1][1], curr_events[count][1])
-                del curr_events[count + 1]
-            else:
-                count += 1
-
-        all_events += curr_events
-        # all events is corrected dictionary in the form of 2d list, removing distinc
-        #     all_events = [
-        #             [0.0, 1.0, 'baby'],
-        #                   ...
-        #             [0.1, 0.4, 'gun'],
-        #             [0.7, 0.9, 'gun'],
-        #                   ...
-        #             [0.1, 0.4, 'breaking'],
-        #             [0.5, 0.6, 'breaking'],
-        #             [0.7, 0.9, 'breaking'],
-        #     ],
-
-    for i in range(len(all_events)):
-        all_events[i][0] = round(all_events[i][0], 3)
-        all_events[i][1] = round(all_events[i][1], 3)
-
-    all_events.sort(key=lambda x: x[0])
-    # sorted all events by their start time, so can be possible that ann -> baby, gun,
-    return all_events
 
 
 def predict_audio_path(model: "pl.LightningModule", audio_path: str):
@@ -227,15 +164,6 @@ def predict_audio_path(model: "pl.LightningModule", audio_path: str):
         List[float, float, str]: List of merged sound events with less precise sound boundaries.
     """
     audio_wins, window_ranges = construct_audio_windows(audio_path)
-    # ann_path = audio_path.replace('.wav', '.txt')
-    # labels = []
-    # for w in window_ranges:
-    #     anns = extract_anns_for_audio_window(
-    #         ann_path, w[0], w[1], window_len_secs)
-    #     compatible_ann = get_model_compatible_anns(
-    #         anns, window_len_secs, num_subwindows)
-    #     labels.append(compatible_ann)
-    # print(labels)
     logmels = np.array([get_log_melspectrogram(audio_win).T[None, :]
                        for audio_win in audio_wins])  # (N, C, H, W)
     preds = model.predict(logmels)
