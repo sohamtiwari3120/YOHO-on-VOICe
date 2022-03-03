@@ -194,7 +194,7 @@ class MonitorSedF1Callback(Callback):
             for audio_path in file_paths['validation'][self.env]:
                 mono_audio_path = convert_path_to_mono(audio_path)
                 print(
-                    f'For testing if correct model: {pl_module.env} {pl_module.learning_rate}')
+                    f'For testing if correct model: {pl_module.learning_rate}')
                 unified_sound_events = predict_audio_path(
                     pl_module, mono_audio_path)
                 print(f'unified_sound_events')
