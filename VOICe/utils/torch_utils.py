@@ -193,12 +193,9 @@ class MonitorSedF1Callback(Callback):
         if epoch > 1:
             for audio_path in file_paths['validation'][self.env]:
                 mono_audio_path = convert_path_to_mono(audio_path)
-                print(
-                    f'For testing if correct model: {pl_module.learning_rate}')
+                
                 unified_sound_events = predict_audio_path(
                     pl_module, mono_audio_path)
-                print(f'unified_sound_events')
-                print(unified_sound_events)
                 folder_path = os.path.join(os.path.dirname(
                     audio_path), 'validation_predictions')
                 os.makedirs(folder_path, exist_ok=True)
