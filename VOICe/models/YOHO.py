@@ -1,6 +1,6 @@
 from numpy import double
 import torch
-from torch.optim import Adam
+from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn import functional as F
 from torch import nn
@@ -134,7 +134,7 @@ class YohoModel(LightningModule):
         return loss
 
     def configure_optimizers(self):
-        opt = Adam(self.parameters(), lr=self.learning_rate)
+        opt = AdamW(self.parameters(), lr=self.learning_rate)
         return {
             "optimizer": opt,
             "lr_scheduler": {
