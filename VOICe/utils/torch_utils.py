@@ -52,7 +52,6 @@ def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, 
 
 
 def compute_padding_along_dim(input_dim: int, kernel: int = 1, stride: int = 1, padding: str = 'same') -> Tuple[int, int]:
-    
     """Compute the amount of padding before and after along a particular dimension for an input tensor, for different types of padding.
 
     Args:
@@ -66,19 +65,21 @@ def compute_padding_along_dim(input_dim: int, kernel: int = 1, stride: int = 1, 
 
     Returns:
         Tuple[int, int]: Tuple of padding values (padding_before, padding_after)
-    """    
+    """
     if padding == 'same':
         if (input_dim % stride == 0):
-          pad_along_dim = max(kernel - stride, 0)
+            pad_along_dim = max(kernel - stride, 0)
         else:
-          pad_along_dim = max(kernel - (input_dim % stride), 0)
+            pad_along_dim = max(kernel - (input_dim % stride), 0)
         pad_before = pad_along_dim // 2
         pad_after = pad_along_dim - pad_before
         return (int(pad_before), int(pad_after))
     elif padding == 'valid':
         return (0, 0)
     else:
-        raise Exception(f"Invalid padding={padding} value. Allowed string values are 'same', 'valid'.")
+        raise Exception(
+            f"Invalid padding={padding} value. Allowed string values are 'same', 'valid'.")
+
 
 def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> torch.Tensor:
     """Computes Mean Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.
@@ -103,6 +104,7 @@ def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> t
         # Note the `axis=-1`
     return squared_difference.mean()
 
+
 def weighted_mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     """Computes Weighted Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.
 
@@ -126,6 +128,7 @@ def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: flo
     Returns:
         List[float, float, str]: List of human readable sound event, with event boundaries in [0, window_len_secs]
     """
+    preds = preds.cpu()
     sound_events = []
     bin_length = window_len_secs / num_subwindows
     for i in range(len(preds)):
@@ -141,7 +144,8 @@ def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: flo
                     if win_ranges is not None:
                         start += win_ranges[i][0]
                         end += win_ranges[i][0]
-                    events_curr_bin.append([start.item(), end.item(), rev_class_dict[k]])
+                    events_curr_bin.append(
+                        [start.item(), end.item(), rev_class_dict[k]])
 
         sound_events += events_curr_bin
     return sound_events
@@ -160,15 +164,30 @@ def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecu
     class_wise_events = {c: [] for c in rev_class_dict}
     for event in sound_events:
         class_wise_events[event[2]].append(event)
-
+    # grouping all annotations by their class
+    # {
+    #     "baby":[
+    #             [0.1, 0.3, 'baby'],
+    #             [0.2, 0.4, 'baby'],
+    #             [0.1, 0.2, 'baby'],
+    #             [0.0, 1.0, 'baby'],
+    #     ],
+    #     "gun":[
+    #             [0.1, 0.3, 'gun'],
+    #             [0.2, 0.4, 'gun'],
+    #             [0.7, 0.9, 'gun'],
+    #     ],
+    #     ....
+    # }
     all_events = []
 
     for k in rev_class_dict:
         curr_events = class_wise_events[k]
         count = 0
-
+        # skipping the last ann in that class to compare ann[i] and ann[i+1]
         while count < len(curr_events) - 1:  # merging anns if reqd
             if (curr_events[count][1] >= curr_events[count + 1][0]) or (curr_events[count + 1][0] - curr_events[count][1] <= max_consecutive_event_silence):
+                # merging two annotations for the same time period into 1
                 curr_events[count][1] = max(
                     curr_events[count + 1][1], curr_events[count][1])
                 del curr_events[count + 1]
@@ -176,13 +195,24 @@ def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecu
                 count += 1
 
         all_events += curr_events
+        # all events is corrected dictionary in the form of 2d list, removing distinc
+        #     all_events = [
+        #             [0.0, 1.0, 'baby'],
+        #                   ...
+        #             [0.1, 0.4, 'gun'],
+        #             [0.7, 0.9, 'gun'],
+        #                   ...
+        #             [0.1, 0.4, 'breaking'],
+        #             [0.5, 0.6, 'breaking'],
+        #             [0.7, 0.9, 'breaking'],
+        #     ],
 
     for i in range(len(all_events)):
         all_events[i][0] = round(all_events[i][0], 3)
         all_events[i][1] = round(all_events[i][1], 3)
 
     all_events.sort(key=lambda x: x[0])
-
+    # sorted all events by their start time, so can be possible that ann -> baby, gun,
     return all_events
 
 
@@ -207,7 +237,7 @@ def predict_audio_path(model: "pl.LightningModule", audio_path: str):
     #     labels.append(compatible_ann)
     # print(labels)
     logmels = np.array([get_log_melspectrogram(audio_win).T[None, :]
-                       for audio_win in audio_wins])
+                       for audio_win in audio_wins])  # (N, C, H, W)
     preds = model.predict(logmels)
     sound_events = convert_model_preds_to_soundevents(
         preds, win_ranges=window_ranges)
@@ -220,7 +250,8 @@ class MonitorSedF1Callback(Callback):
 
     Args:
         Callback (pytorch_lightning.callbacks.Callback): PyTorch Lightning Callback base class
-    """    
+    """
+
     def __init__(self, env):
         super(MonitorSedF1Callback, self).__init__()
         self.best_f1 = 0.0
@@ -234,32 +265,43 @@ class MonitorSedF1Callback(Callback):
         if epoch > 1:
             for audio_path in file_paths['validation'][self.env]:
                 mono_audio_path = convert_path_to_mono(audio_path)
-                unified_sound_events = predict_audio_path(pl_module, mono_audio_path)
-                folder_path = os.path.join(os.path.dirname(audio_path), 'validation_predictions') 
+                print(
+                    f'For testing if correct model: {pl_module.env} {pl_module.learning_rate}')
+                unified_sound_events = predict_audio_path(
+                    pl_module, mono_audio_path)
+                print(f'unified_sound_events')
+                print(unified_sound_events)
+                folder_path = os.path.join(os.path.dirname(
+                    audio_path), 'validation_predictions')
                 os.makedirs(folder_path, exist_ok=True)
 
                 reference_files.append(audio_path.replace('.wav', '.txt'))
-                file_name = os.path.basename(audio_path).replace('.wav', "-se-prediction.txt")
+                file_name = os.path.basename(audio_path).replace(
+                    '.wav', "-se-prediction.txt")
                 file_path = os.path.join(folder_path, file_name)
                 estimated_files.append(file_path)
 
                 with open(file_path, 'w') as fp:
-                    fp.write('\n'.join('{},{},{}'.format(round(x[0], 5), round(x[1], 5), x[2]) for x in unified_sound_events))
-            
-            curr_f1, curr_error = compute_sed_f1_errorrate(reference_files, estimated_files)
+                    fp.write('\n'.join('{},{},{}'.format(round(x[0], 5), round(
+                        x[1], 5), x[2]) for x in unified_sound_events))
+
+            curr_f1, curr_error = compute_sed_f1_errorrate(
+                reference_files, estimated_files)
             self.log('f1', curr_f1)
             self.log('error_rate', curr_error)
 
             if curr_f1 > self.best_f1:
                 self.best_f1 = curr_f1
-                trainer.save_checkpoint(f"./model_checkpoints/{snr}-mono/model-{self.env}-best-f1.ckpt")
+                trainer.save_checkpoint(
+                    f"./model_checkpoints/{snr}-mono/model-{self.env}-best-f1.ckpt")
 
             if curr_error < self.best_error:
                 self.best_error = curr_error
-                trainer.save_checkpoint(f"./model_checkpoints/{snr}-mono/model-{self.env}-best-error.ckpt")
+                trainer.save_checkpoint(
+                    f"./model_checkpoints/{snr}-mono/model-{self.env}-best-error.ckpt")
 
             print("F-measure: {:.3f} vs {:.3f}".format(curr_f1, self.best_f1))
-            print("Error rate: {:.3f} vs {:.3f}".format(curr_error, self.best_error))
-            
+            print("Error rate: {:.3f} vs {:.3f}".format(
+                curr_error, self.best_error))
 
             # Or print all metrics as reports

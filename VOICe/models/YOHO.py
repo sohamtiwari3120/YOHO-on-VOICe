@@ -149,6 +149,6 @@ class YohoModel(LightningModule):
         with torch.no_grad():
             # x.shape (n, c, h, w)
             x = torch.Tensor(x).to(self.device)
-            logits = self(x).cpu()
+            logits = self(x)
             y = torch.sigmoid(logits)
             return y
