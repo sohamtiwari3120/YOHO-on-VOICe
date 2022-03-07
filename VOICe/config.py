@@ -16,7 +16,8 @@ n_fft = 2048
 n_mels = 40
 fmin = 0
 fmax = int(sample_rate/2)
-
+backends = ['pytorch', 'tensor_flow']
+backend = backends[0]
 env = 'indoor'
 learning_rate = 1e-3
 num_classes = 3
@@ -26,6 +27,9 @@ batch_size = 16
 input_height = 257 # hence 257 is actually the length of the time dimension before transpose
 input_width = 40 # hence 40 is actually the length of the frequency dimension (n_mels) before transpose
 num_workers = 8
+
+# tf
+shuffle = False
 
 # SpecAugment
 time_warping_para=5
