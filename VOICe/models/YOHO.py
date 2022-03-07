@@ -138,12 +138,12 @@ class YohoModel(LightningModule):
         opt = AdamW(self.parameters(), lr=self.learning_rate)
         return {
             "optimizer": opt,
-            "lr_scheduler": {
-                "scheduler": ReduceLROnPlateau(opt, mode=mode, patience=patience, factor=factor),
-                "monitor": "loss",
-                # If "monitor" references validation metrics, then "frequency" should be set to a
-                # multiple of "trainer.check_val_every_n_epoch".
-            },
+            # "lr_scheduler": {
+            #     "scheduler": ReduceLROnPlateau(opt, mode=mode, patience=patience, factor=factor),
+            #     "monitor": "loss",
+            #     # If "monitor" references validation metrics, then "frequency" should be set to a
+            #     # multiple of "trainer.check_val_every_n_epoch".
+            # },
         }
 
     def predict(self, x):
