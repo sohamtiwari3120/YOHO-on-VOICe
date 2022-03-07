@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple, Union
 import os
 import numpy as np
 import torch
-from config import num_classes, window_len_secs, num_classes, num_subwindows, rev_class_dict, max_consecutive_event_silence, snr
+from config import num_classes, window_len_secs, num_classes, num_subwindows, rev_class_dict, batch_size, snr
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 from utils.evaluate_utils import compute_sed_f1_errorrate
@@ -101,7 +101,9 @@ def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> t
         squared_difference = torch.multiply(
             squared_difference, probability_multiplier)  # element wise multiplication
         # Note the `axis=-1`
-    return squared_difference.mean()
+    loss = torch.sum(squared_difference, dim=(-1, -2))
+    assert loss.shape == (batch_size, )
+    return loss
 
 
 def weighted_mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
