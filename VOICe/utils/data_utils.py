@@ -444,8 +444,8 @@ class VOICeDataModule(pl.LightningDataModule):
         if stage == "fit" or stage is None:
             self.voice_train = VOICeDataset('training', self.env, False)
             self.voice_val = VOICeDataset('validation', self.env, False)
-            print(f'train dataloader: len - {self.voice_train.__len__}, batch_size - {self.batch_size}, num_batches_per_epoch = {self.voice_train.__len__/self.batch_size}')
-            print(f'val dataloader: len - {self.voice_val.__len__}, batch_size - {self.batch_size}, num_batches_per_epoch = {self.voice_val.__len__/self.batch_size}')
+            print(f'train dataloader: len - {self.voice_train.__len__()}, batch_size - {self.batch_size}, num_batches_per_epoch = {self.voice_train.__len__()/self.batch_size}')
+            print(f'val dataloader: len - {self.voice_val.__len__()}, batch_size - {self.batch_size}, num_batches_per_epoch = {self.voice_val.__len__()/self.batch_size}')
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
