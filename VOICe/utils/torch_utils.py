@@ -80,6 +80,20 @@ def compute_padding_along_dim(input_dim: int, kernel: int = 1, stride: int = 1, 
             f"Invalid padding={padding} value. Allowed string values are 'same', 'valid'.")
 
 
+def my_loss_fn(y_true, y_pred):
+    squared_difference = torch.square(y_true - y_pred)
+    ss_True = squared_difference[:, :, 0] * 0 + 1
+    ss_0 = y_true[:, :, 0]  # (5, 5)
+    ss_1 = y_true[:, :, 3]  # (5, 5)
+    ss_2 = y_true[:, :, 6]  # (5, 5)
+    sss = torch.stack((ss_True, ss_0, ss_0, ss_True, ss_1, ss_1,
+                    ss_True, ss_2, ss_2,), dim=2)
+    squared_difference = torch.multiply(
+        squared_difference, sss)  # element wise multiplication
+    # Note the `axis=-1`
+    return torch.sum(squared_difference, dim=(-1, -2))
+
+
 def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> torch.Tensor:
     """Computes Mean Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.
 
@@ -192,7 +206,7 @@ class MonitorSedF1Callback(Callback):
         if epoch > 1:
             for audio_path in file_paths['validation'][self.env]:
                 mono_audio_path = convert_path_to_mono(audio_path)
-                
+
                 unified_sound_events = predict_audio_path(
                     pl_module, mono_audio_path)
                 folder_path = os.path.join(os.path.dirname(

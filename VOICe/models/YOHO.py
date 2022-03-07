@@ -8,7 +8,7 @@ from pytorch_lightning.core.lightning import LightningModule
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, loss_function_str, batch_size
-from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse
+from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse, my_loss_fn
 
 
 class YohoModel(LightningModule):
@@ -21,7 +21,7 @@ class YohoModel(LightningModule):
     def __init__(self,
                  depthwise_layers: depthwise_layers_type = depthwise_layers,
                  num_classes: int = num_classes,
-                 input_height: int = input_height, input_width: int = input_width, learning_rate: double = learning_rate, loss_function = eval(loss_function_str), 
+                 input_height: int = input_height, input_width: int = input_width, learning_rate: double = learning_rate, loss_function = my_loss_fn, 
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoModel, self).__init__(*args, **kwargs)
@@ -31,7 +31,7 @@ class YohoModel(LightningModule):
         self.input_width = input_width
         self.learning_rate = learning_rate
         # self.loss_function = loss_function
-        self.loss_function = nn.MSELoss(reduce=False)
+        self.loss_function = nn.MSELoss()
         output_width = self.input_width
         output_height = self.input_height
         self.block_first = nn.Sequential(
