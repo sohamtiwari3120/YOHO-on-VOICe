@@ -5,7 +5,9 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor
 from utils.torch_utils import MonitorSedF1Callback
 from loguru import logger
-from config import env, devices, accelerator, gradient_clip_val
+from config import env, devices, accelerator, gradient_clip_val, input_height, input_width
+from torchsummary import summary
+import torch
 
 @logger.catch
 def main(args):
@@ -18,6 +20,8 @@ def main(args):
     else:
         model = YohoModel()
         logger.info(f'Starting a fresh model.')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    summary(model.to(device), (1, input_height, input_width))
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     trainer = Trainer(callbacks=[MonitorSedF1Callback(env), lr_monitor], devices=devices, accelerator=accelerator, gradient_clip_val=gradient_clip_val)
     voice_dm = VOICeDataModule(env)
