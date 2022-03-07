@@ -150,9 +150,6 @@ def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: flo
     return sound_events
 
 
-
-
-
 def predict_audio_path(model: "pl.LightningModule", audio_path: str):
     """Get model predictions for input audio given audio_path
 

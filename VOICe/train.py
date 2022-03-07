@@ -15,14 +15,18 @@ def pytorch(args):
     logger.add(f'Using {args.backend} backend')
     logger.add(f'{args.backend}_train_{env}.log', rotation='500 KB')
     logger.info(f'Starting training of model for {env} audio.')
+    
     if args.chkpt_path is not None:
         model = YohoModel.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
         model = YohoModel()
         logger.info(f'Starting a fresh model.')
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    summary(model.to(device), (1, input_height, input_width))
+
+    if args.model_summary:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        summary(model.to(device), (1, input_height, input_width))
+
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     trainer = Trainer(callbacks=[MonitorSedF1Callback(env), lr_monitor], devices=devices, accelerator=accelerator, gradient_clip_val=gradient_clip_val)
     voice_dm = VOICeDataModule(env)
@@ -91,6 +95,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--env', type=str, default=env)
     parser.add_argument('-cp', '--chkpt_path', type=str, default=None)
     parser.add_argument('-alr', '--auto_lr', type=bool, default=False)
+    parser.add_argument('-ms', '--model_summary', type=bool, default=False)
 
     args = parser.parse_args()
     eval(args.backend)(args)
