@@ -7,7 +7,7 @@ from torch import nn
 from pytorch_lightning.core.lightning import LightningModule
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
-from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, loss_function_str
+from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, loss_function_str, batch_size
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse
 
 
@@ -130,6 +130,7 @@ class YohoModel(LightningModule):
         logits = self(x)
         sigmoid = torch.sigmoid(logits)
         loss = self.loss_function(y, sigmoid)
+        print(batch_size, loss.shape)
         # self.log("validation_loss", loss, prog_bar=True)
         return loss
 
