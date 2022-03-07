@@ -5,7 +5,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor
 from utils.torch_utils import MonitorSedF1Callback
 from loguru import logger
-from config import env, devices, accelerator, gradient_clip_val, input_height, input_width
+from config import env, devices, accelerator, gradient_clip_val, input_height, input_width, backend, backends
 from torchsummary import summary
 import torch
 
