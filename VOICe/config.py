@@ -45,7 +45,7 @@ factor = 0.5
 devices="auto"
 accelerator="auto"
 gradient_clip_val=0.5
-loss_function_str: str = 'mse'
+loss_function_str: str = 'weighted_mse'
 depthwise_layers = [
     # (layer_function, kernel, stride, num_filters)
     ([3, 3], 1,   64),

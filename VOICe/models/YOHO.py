@@ -122,7 +122,7 @@ class YohoModel(LightningModule):
         logits = self(x)
         sigmoid = torch.sigmoid(logits)
         loss = self.loss_function(y, sigmoid)
-        self.log("train_loss", loss, prog_bar=True)
+        # self.log("train_loss", loss, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -130,7 +130,7 @@ class YohoModel(LightningModule):
         logits = self(x)
         sigmoid = torch.sigmoid(logits)
         loss = self.loss_function(y, sigmoid)
-        self.log("validation_loss", loss, prog_bar=True)
+        # self.log("validation_loss", loss, prog_bar=True)
         return loss
 
     def configure_optimizers(self):
@@ -139,7 +139,7 @@ class YohoModel(LightningModule):
             "optimizer": opt,
             "lr_scheduler": {
                 "scheduler": ReduceLROnPlateau(opt, mode=mode, patience=patience, factor=factor),
-                "monitor": "validation_loss",
+                "monitor": "loss",
                 # If "monitor" references validation metrics, then "frequency" should be set to a
                 # multiple of "trainer.check_val_every_n_epoch".
             },
