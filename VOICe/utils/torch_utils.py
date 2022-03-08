@@ -91,8 +91,7 @@ def my_loss_fn(y_true, y_pred):
     squared_difference = torch.multiply(
         squared_difference, sss)  # element wise multiplication
     # Note the `axis=-1`
-    print(squared_difference.shape)
-    return torch.sum(squared_difference, dim=(-1, -2)).float()
+    return torch.sum(squared_difference, dim=(-1, -2)).mean()
 
 
 def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> torch.Tensor:

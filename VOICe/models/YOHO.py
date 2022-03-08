@@ -30,8 +30,8 @@ class YohoModel(LightningModule):
         self.input_height = input_height
         self.input_width = input_width
         self.learning_rate = learning_rate
-        # self.loss_function = loss_function
-        self.loss_function = nn.MSELoss()
+        self.loss_function = loss_function
+        # self.loss_function = nn.MSELoss()
         output_width = self.input_width
         output_height = self.input_height
         self.block_first = nn.Sequential(
