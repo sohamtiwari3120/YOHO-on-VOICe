@@ -131,7 +131,7 @@ class YohoModel(LightningModule):
         logits = self(x)
         sigmoid = torch.sigmoid(logits)
         loss = self.loss_function(y, sigmoid)
-        print(batch_size, loss.shape)
+        # print(batch_size, loss.shape)
         # self.log("validation_loss", loss, prog_bar=True)
         return loss
 
