@@ -42,6 +42,18 @@ def weighted_sse(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     """
     return sse(y_true, y_pred, True)
 
+def my_loss_fn(y_true, y_pred):
+    squared_difference = tf.square(y_true - y_pred)
+    ss_True = squared_difference[:, :, 0] * 0 + 1
+    ss_0 = y_true[:, :, 0]  # (5, 5)
+    ss_1 = y_true[:, :, 3]  # (5, 5)
+    ss_2 = y_true[:, :, 6]  # (5, 5)
+    sss = tf.stack((ss_True, ss_0, ss_0, ss_True, ss_1, ss_1,
+                    ss_True, ss_2, ss_2,), dim=2)
+    squared_difference = tf.multiply(
+        squared_difference, sss)  # element wise multiplication
+    # Note the `axis=-1`
+    return tf.reduce_sum(squared_difference, axis=[-1, -2])
 
 class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
     """Tensorflow Callback for monitoring f1 scores for sed task and storing model weights for best f1 scores and best error rates.
@@ -140,9 +152,10 @@ class DataGenerator(tf.keras.utils.Sequence):
 
     def __getitem__(self, idx):
         'Generate one batch of data'
-        X = np.array([np.load(self.logmel_npy[i])[:, None] for i in self.indices[idx *
+        X = np.array([np.load(self.logmel_npy[i]) for i in self.indices[idx *
                      self.batch_size: (idx+1)*self.batch_size]])  # to convert (H, W) -> (H, W, C)
         # (height, width, channels=1)
+        X = np.expand_dims(X, axis=3)
         assert X.shape == (self.batch_size, input_height, input_width, 1)
         y = np.array([np.load(self.label_npy[i]) for i in self.indices[idx *
                      self.batch_size:(idx+1)*self.batch_size]])

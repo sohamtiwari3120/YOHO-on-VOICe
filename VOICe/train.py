@@ -5,7 +5,7 @@ from utils.data_utils import VOICeDataModule
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor
 from utils.torch_utils import MonitorSedF1Callback
-from utils.tf_utils import DataGenerator, weighted_sse
+from utils.tf_utils import DataGenerator, my_loss_fn
 from loguru import logger
 from config import env, devices, accelerator, gradient_clip_val, input_height, input_width, backend, backends
 from torchsummary import summary
@@ -71,7 +71,7 @@ def tensor_flow(args):
     validation_data = DataGenerator('validation', env, spec_transform=False, shuffle=False)
         
     # Fit model
-    model.train_and_validate(train_data, validation_data, weighted_sse)
+    model.train_and_validate(train_data, validation_data, my_loss_fn)
     logger.info(f'Finished training of model for {env} audio.')
 
 
