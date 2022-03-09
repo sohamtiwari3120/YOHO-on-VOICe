@@ -1,42 +1,87 @@
 from numpy import double
 import torch
-from torch.optim import AdamW
+from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn import functional as F
 from torch import nn
 from pytorch_lightning.core.lightning import LightningModule
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
-from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, loss_function_str, batch_size
+from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, adam_eps, initialize_layer
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse, my_loss_fn
 
 
-class YohoModel(LightningModule):
-    """PyTorch (Lightning) model for YOHO algorithm
+def init_layer(layer):
+    """Initialize a Linear or Convolutional layer. """
+    nn.init.xavier_uniform_(layer.weight)
 
-    Args:
-        LightningModule (LightningModule): pytorch lightning class
+    if hasattr(layer, 'bias'):
+        if layer.bias is not None:
+            layer.bias.data.fill_(0.)
+
+
+def init_bn(bn):
+    """Initialize a Batchnorm layer. """
+    bn.bias.data.fill_(0.)
+    bn.weight.data.fill_(1.)
+
+
+class InitializedConv1d(nn.Conv1d):
+    """Conv1d layer initalized using init_layer
     """
 
+    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=True) -> None:
+        super().__init__(in_channels, out_channels, kernel_size, stride,
+                         padding, dilation, groups, bias, padding_mode, device, dtype)
+        self.initialize_layer = initialize_layer
+        if(self.initialize_layer):
+            init_layer(self)
+
+
+class InitializedConv2d(nn.Conv2d):
+    """Conv2d layer initalized using init_layer
+    """
+
+    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=True) -> None:
+        super().__init__(in_channels, out_channels, kernel_size, stride,
+                         padding, dilation, groups, bias, padding_mode, device, dtype)
+        self.initialize_layer = initialize_layer
+        if(self.initialize_layer):
+            init_layer(self)
+
+
+class InitializedBatchNorm2d(nn.BatchNorm2d):
+    """BatchNorm2d layer initalized using init_bn
+    """
+
+    def __init__(self, num_features, eps=0.00001, momentum=0.1, affine=True, track_running_stats=True, device=None, dtype=None, initialize_layer=initialize_layer):
+        super().__init__(num_features, eps, momentum,
+                         affine, track_running_stats, device, dtype)
+        self.initialize_layer = initialize_layer
+        if(self.initialize_layer):
+            init_bn(self)
+
+
+class Yoho(nn.Module):
+    """PyTorch Model for Yoho Algorithm
+    """    
     def __init__(self,
                  depthwise_layers: depthwise_layers_type = depthwise_layers,
                  num_classes: int = num_classes,
-                 input_height: int = input_height, input_width: int = input_width, learning_rate: double = learning_rate, loss_function = my_loss_fn, 
+                 input_height: int = input_height, input_width: int = input_width,
                  *args: Any, **kwargs: Any) -> None:
 
-        super(YohoModel, self).__init__(*args, **kwargs)
+        super(Yoho, self).__init__(*args, **kwargs)
         self.depthwise_layers = depthwise_layers
         self.num_classes = num_classes
         self.input_height = input_height
         self.input_width = input_width
-        self.learning_rate = learning_rate
-        self.loss_function = loss_function
-        # self.loss_function = nn.MSELoss()
         output_width = self.input_width
         output_height = self.input_height
+
         self.block_first = nn.Sequential(
-            nn.Conv2d(1, 32, (3, 3), stride=2, bias=False),
-            nn.BatchNorm2d(32, eps=1e-4),
+            InitializedConv2d(1, 32, (3, 3), stride=2, bias=False),
+            InitializedBatchNorm2d(32, eps=1e-4),
             nn.ReLU()
         )
         padding_left_right = compute_padding_along_dim(
@@ -74,13 +119,13 @@ class YohoModel(LightningModule):
                 (padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1]))
             self.blocks_depthwise.append(
                 nn.Sequential(
-                    nn.Conv2d(input_channels, input_channels, kernel_size, stride=stride,
-                              padding='valid', groups=input_channels, bias=False),  # step 1
-                    nn.BatchNorm2d(input_channels, eps=1e-4),
+                    InitializedConv2d(input_channels, input_channels, kernel_size, stride=stride,
+                                      padding='valid', groups=input_channels, bias=False),  # step 1
+                    InitializedBatchNorm2d(input_channels, eps=1e-4),
                     nn.ReLU(),
-                    nn.Conv2d(input_channels, output_channels,
-                              (1, 1), 1, 'same', bias=False),  # step 2
-                    nn.BatchNorm2d(output_channels, eps=1e-4),
+                    InitializedConv2d(input_channels, output_channels,
+                                      (1, 1), 1, 'same', bias=False),  # step 2
+                    InitializedBatchNorm2d(output_channels, eps=1e-4),
                     nn.ReLU(),
                     nn.Dropout2d(0.1)
                 )
@@ -98,12 +143,12 @@ class YohoModel(LightningModule):
         # (batch_size, num_channels, height, width)
         num_channels_last_depthwise = self.depthwise_layers[-1][-1]
         self.block_final = nn.Sequential(
-            nn.Conv1d(int(output_width * num_channels_last_depthwise),
-                      3*self.num_classes, 1)
+            InitializedConv1d(int(output_width * num_channels_last_depthwise),
+                              3*self.num_classes, 1)
         )
 
-    def forward(self, x):
-        x = x.float()
+    def forward(self, input):
+        x = input.float()
         x = F.pad(x, self.block_first_padding)
         x = self.block_first(x)
         for i, block in enumerate(self.blocks_depthwise):
@@ -118,9 +163,32 @@ class YohoModel(LightningModule):
         x = torch.permute(x, (0, 2, 1))
         return x
 
+
+class YohoLM(LightningModule):
+    """PyTorch (Lightning) Module for YOHO algorithm
+
+    Args:
+        LightningModule (LightningModule): pytorch lightning class
+    """
+
+    def __init__(self,
+                 depthwise_layers: depthwise_layers_type = depthwise_layers,
+                 num_classes: int = num_classes,
+                 input_height: int = input_height, input_width: int = input_width, learning_rate: double = learning_rate, loss_function=my_loss_fn,
+                 *args: Any, **kwargs: Any) -> None:
+
+        super(YohoLM, self).__init__(*args, **kwargs)
+        self.model = Yoho(depthwise_layers, num_classes, input_height, input_width)
+        self.learning_rate = learning_rate
+        self.loss_function = loss_function
+
+    def forward(self, x):
+        x = self.model(x)
+        return x
+
     def training_step(self, batch, batch_idx):
         x, y = batch
-        logits = self(x)
+        logits = self(x) # -> (batch_size, num_windows, 3*num_classes)
         sigmoid = torch.sigmoid(logits)
         loss = self.loss_function(y, sigmoid)
         # self.log("train_loss", loss, prog_bar=True)
@@ -135,8 +203,9 @@ class YohoModel(LightningModule):
         # self.log("validation_loss", loss, prog_bar=True)
         return loss
 
+    # check for default parameter values for tf and pytorch
     def configure_optimizers(self):
-        opt = AdamW(self.parameters(), lr=self.learning_rate)
+        opt = Adam(self.parameters(), lr=self.learning_rate, eps=adam_eps)
         return {
             "optimizer": opt,
             # "lr_scheduler": {

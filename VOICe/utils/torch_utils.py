@@ -119,6 +119,9 @@ def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> t
     assert loss.shape == (batch_size, )
     return loss
 
+# try changing loss to l1
+# data input and output could be problematic
+# print parameters of every layer, if not changing, then not training
 
 def weighted_mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     """Computes Weighted Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.

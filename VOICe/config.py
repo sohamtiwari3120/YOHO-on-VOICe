@@ -46,6 +46,13 @@ devices="auto"
 accelerator="auto"
 gradient_clip_val=0.5
 loss_function_str: str = 'weighted_mse'
+
+# Adam Optimiser
+adam_eps = 1e-7
+
+# layer initializer
+initialize_layer: bool = True
+
 depthwise_layers = [
     # (layer_function, kernel, stride, num_filters)
     ([3, 3], 1,   64),

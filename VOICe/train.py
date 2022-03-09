@@ -1,5 +1,5 @@
 import argparse
-from models.YOHO import YohoModel
+from models.YOHO import YohoLM
 from utils.data_utils import VOICeDataModule
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor
@@ -17,10 +17,10 @@ def pytorch(args):
     logger.info(f'Starting training of model for {env} audio.')
     
     if args.chkpt_path is not None:
-        model = YohoModel.load_from_checkpoint(args.chkpt_path)
+        model = YohoLM.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
-        model = YohoModel()
+        model = YohoLM()
         logger.info(f'Starting a fresh model.')
 
     if args.model_summary:
@@ -57,10 +57,10 @@ def tensor_flow(args):
     logger.add(f'{args.backend}_train_{env}.log', rotation='500 KB')
     logger.info(f'Starting training of model for {env} audio.')
     if args.chkpt_path is not None:
-        model = YohoModel.load_from_checkpoint(args.chkpt_path)
+        model = YohoLM.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
-        model = YohoModel()
+        model = YohoLM()
         logger.info(f'Starting a fresh model.')
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     summary(model.to(device), (1, input_height, input_width))
