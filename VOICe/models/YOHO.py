@@ -1,3 +1,4 @@
+from turtle import forward
 from numpy import double
 import torch
 from torch.optim import Adam
@@ -9,6 +10,7 @@ from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, adam_eps, initialize_layer
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse, my_loss_fn
+import torchvision
 
 
 def init_layer(layer):
@@ -165,6 +167,23 @@ class Yoho(nn.Module):
         return x
 
 
+class TestModel(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.bw2col = nn.Sequential(
+            InitializedBatchNorm2d(1),
+            # (128, 656) -> (64, 656)
+            InitializedConv2d(1, 10, (64, 2), padding=0), nn.ReLU(),
+            InitializedConv2d(10, 3, 1, padding=0), nn.ReLU())
+        self.mv2 = torchvision.models.mobilenet_v2(pretrained=True)
+
+    def forward(self, input):
+        x = input
+        x = self.bw2col(x) # -> (batch_size, 3, n_mels, num_frames)
+        x = self.mv2.features(x)
+        return x
+
+
 class YohoLM(LightningModule):
     """PyTorch (Lightning) Module for YOHO algorithm
 
@@ -179,8 +198,9 @@ class YohoLM(LightningModule):
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoLM, self).__init__(*args, **kwargs)
-        self.model = Yoho(depthwise_layers, num_classes,
-                          input_height, input_width)
+        # self.model = Yoho(depthwise_layers, num_classes,
+        #                   input_height, input_width)
+        self.model = TestModel()
         self.learning_rate = learning_rate
         self.loss_function = loss_function
 
@@ -223,7 +243,7 @@ class YohoLM(LightningModule):
         for param in self.model.parameters():
             print(param)
         print(f"\nEnd\n\n")
-    
+
     def on_fit_end(self) -> None:
         print(f"\n\n\n\nModel Params:\n")
         for param in self.model.parameters():
