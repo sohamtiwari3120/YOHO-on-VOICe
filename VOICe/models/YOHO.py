@@ -64,7 +64,8 @@ class InitializedBatchNorm2d(nn.BatchNorm2d):
 
 class Yoho(nn.Module):
     """PyTorch Model for Yoho Algorithm
-    """    
+    """
+
     def __init__(self,
                  depthwise_layers: depthwise_layers_type = depthwise_layers,
                  num_classes: int = num_classes,
@@ -178,7 +179,8 @@ class YohoLM(LightningModule):
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoLM, self).__init__(*args, **kwargs)
-        self.model = Yoho(depthwise_layers, num_classes, input_height, input_width)
+        self.model = Yoho(depthwise_layers, num_classes,
+                          input_height, input_width)
         self.learning_rate = learning_rate
         self.loss_function = loss_function
 
@@ -188,10 +190,10 @@ class YohoLM(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        logits = self(x) # -> (batch_size, num_windows, 3*num_classes)
+        logits = self(x)  # -> (batch_size, num_windows, 3*num_classes)
         sigmoid = torch.sigmoid(logits)
         loss = self.loss_function(y, sigmoid)
-        # self.log("train_loss", loss, prog_bar=True)
+        self.log("train_loss", loss, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -199,13 +201,13 @@ class YohoLM(LightningModule):
         logits = self(x)
         sigmoid = torch.sigmoid(logits)
         loss = self.loss_function(y, sigmoid)
-        # print(batch_size, loss.shape)
-        # self.log("validation_loss", loss, prog_bar=True)
+        self.log("validation_loss", loss, prog_bar=True)
         return loss
 
     # check for default parameter values for tf and pytorch
     def configure_optimizers(self):
-        opt = Adam(self.parameters(), lr=self.learning_rate, eps=adam_eps)
+        opt = Adam(self.model.parameters(),
+                   lr=self.learning_rate, eps=adam_eps)
         return {
             "optimizer": opt,
             # "lr_scheduler": {
@@ -215,6 +217,12 @@ class YohoLM(LightningModule):
             #     # multiple of "trainer.check_val_every_n_epoch".
             # },
         }
+
+    def on_epoch_end(self):
+        print(f"\n\n\n\nModel Params:\n")
+        for param in self.model.parameters():
+            print(param)
+        print(f"\nEnd\n\n")
 
     def predict(self, x):
         with torch.no_grad():
