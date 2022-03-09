@@ -218,7 +218,13 @@ class YohoLM(LightningModule):
             # },
         }
 
-    def on_epoch_end(self):
+    def on_fit_start(self) -> None:
+        print(f"\n\n\n\nModel Params:\n")
+        for param in self.model.parameters():
+            print(param)
+        print(f"\nEnd\n\n")
+    
+    def on_fit_end(self) -> None:
         print(f"\n\n\n\nModel Params:\n")
         for param in self.model.parameters():
             print(param)
