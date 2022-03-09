@@ -49,7 +49,7 @@ def my_loss_fn(y_true, y_pred):
     ss_1 = y_true[:, :, 3]  # (5, 5)
     ss_2 = y_true[:, :, 6]  # (5, 5)
     sss = tf.stack((ss_True, ss_0, ss_0, ss_True, ss_1, ss_1,
-                    ss_True, ss_2, ss_2,), dim=2)
+                    ss_True, ss_2, ss_2,), axis=2)
     squared_difference = tf.multiply(
         squared_difference, sss)  # element wise multiplication
     # Note the `axis=-1`
