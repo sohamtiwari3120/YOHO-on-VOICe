@@ -68,7 +68,7 @@ class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
         self.best_error = np.inf
         self.env = env
 
-    def on_epoch_end(self, epoch) -> None:
+    def on_epoch_end(self, epoch, logs=None) -> None:
         reference_files = []
         estimated_files = []
         model_ckpt_folder_path = os.path.join(os.path.dirname(

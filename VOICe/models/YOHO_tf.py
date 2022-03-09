@@ -31,11 +31,10 @@ class YohoTF:
         self.input_width = input_width
 
         inputs = tf.keras.Input(
-            shape=(input_height, input_width), name="mel_input")
-        X = tf.keras.layers.Reshape((input_height, input_width, 1))(inputs)
+            shape=(input_height, input_width, 1), name="mel_input")
         X = tf.keras.layers.Conv2D(filters=32, kernel_size=[3, 3], strides=2, padding='same', use_bias=False,
                                    activation=None, name="layer1/conv",
-                                   kernel_regularizer=l2(l2_kernel_reg_first_conv2d), bias_regularizer=l2(l2_bias_reg_first_conv2d))(X)
+                                   kernel_regularizer=l2(l2_kernel_reg_first_conv2d), bias_regularizer=l2(l2_bias_reg_first_conv2d))(inputs)
         X = tf.keras.layers.BatchNormalization(
             center=True, scale=False, epsilon=1e-4, name="layer1/bn")(X)
         X = tf.keras.layers.ReLU(name="layer1/relu")(X)
