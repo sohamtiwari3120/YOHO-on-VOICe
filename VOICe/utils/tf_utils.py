@@ -1,11 +1,13 @@
-from sklearn.utils import shuffle
 import tensorflow as tf
+import os
 import numpy as np
-from utils.data_utils import envs, data_mode, file_paths, get_logmel_label_paths
-from config import batch_size, input_height, input_width, num_subwindows, num_classes
 import glob
-from utils.SpecAugment import spec_augment_tensorflow
 
+from utils.evaluate_utils import compute_sed_f1_errorrate
+from config import num_classes, snr, shuffle, batch_size, input_height, input_width, num_subwindows
+from utils.data_utils import convert_path_to_mono, file_paths, envs, data_mode, get_logmel_label_paths
+from utils.torch_utils import predict_audio_path
+from utils.SpecAugment import spec_augment_tensorflow
 
 def sse(y_true: tf.Tensor, y_pred: tf.Tensor, weighted: bool = False) -> tf.Tensor:
     """Computes Mean Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.
@@ -41,129 +43,79 @@ def weighted_sse(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     return sse(y_true, y_pred, True)
 
 
-class MyCustomCallback_44(tf.keras.callbacks.Callback):
-    """
-      callback when validating/testing
+class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
+    """Tensorflow Callback for monitoring f1 scores for sed task and storing model weights for best f1 scores and best error rates.
+
+    Args:
+        Callback (tf.keras.callbacks.Callback): Tensorflow Callback base class
     """
 
     def __init__(self, env):
-        super(MyCustomCallback_44, self).__init__()
+        super(MonitorSedF1CallbackTf, self).__init__()
         self.best_f1 = 0.0
         self.best_error = np.inf
         self.env = env
 
-    def on_train_begin(self, logs=None):
-        pass
-
-    def on_train_end(self, logs=None):
-        pass
-
-    def on_epoch_end(self, epoch, logs=None):
+    def on_epoch_end(self, epoch) -> None:
         reference_files = []
         estimated_files = []
+        model_ckpt_folder_path = os.path.join(os.path.dirname(
+            os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', 'tf')
+        os.makedirs(model_ckpt_folder_path, exist_ok=True)
         if epoch > 1:
-            for ii, audio in enumerate(eval(f"mono_{self.env}_validation_files")):
-                audio_file_path = audio
-                see = mk_preds_YOHO_mel(self.model, ii, self.env)
-                n_label = n_label = f"./9dB-mono/eval-files-2/{self.env}/" + os.path.basename(
-                    audio_file_path).replace(".wav", "") + "-se-prediction.txt"
+            for audio_path in file_paths['validation'][self.env]:
+                mono_audio_path = convert_path_to_mono(audio_path)
 
-                with open(n_label, 'w') as fp:
-                    fp.write('\n'.join('{},{},{}'.format(
-                        round(x[0], 5), round(x[1], 5), x[2]) for x in see))
+                unified_sound_events = predict_audio_path(
+                    self.model, mono_audio_path)
+                folder_path = os.path.join(os.path.dirname(
+                    audio_path), 'tf_validation_predictions')
+                os.makedirs(folder_path, exist_ok=True)
 
-            destination = f"./9dB-mono/eval-files-2/{self.env}/"
-            test_set = glob.glob(destination + "*[0-9].txt")
+                reference_files.append(audio_path.replace('.wav', '.txt'))
+                file_name = os.path.basename(audio_path).replace(
+                    '.wav', "-se-prediction.txt")
+                file_path = os.path.join(folder_path, file_name)
+                estimated_files.append(file_path)
 
-            eval_path = "./9dB-mono/"
+                with open(file_path, 'w') as fp:
+                    fp.write('\n'.join('{},{},{}'.format(round(x[0], 5), round(
+                        x[1], 5), x[2]) for x in unified_sound_events))
 
-            file_list = [
-                {
-                    'reference_file': tt,
-                    'estimated_file': tt.replace(".txt", "-se-prediction.txt")
-                }
-                for tt in test_set
-            ]
-
-            data = []
-
-            # Get used event labels
-            all_data = dcase_util.containers.MetaDataContainer()
-            for file_pair in file_list:
-                reference_event_list = sed_eval.io.load_event_list(
-                    filename=file_pair['reference_file']
-                )
-                estimated_event_list = sed_eval.io.load_event_list(
-                    filename=file_pair['estimated_file']
-                )
-
-                data.append({'reference_event_list': reference_event_list,
-                            'estimated_event_list': estimated_event_list})
-
-                all_data += reference_event_list
-
-            event_labels = all_data.unique_event_labels
-
-            # Start evaluating
-
-            # Create metrics classes, define parameters
-            segment_based_metrics = sed_eval.sound_event.SegmentBasedMetrics(
-                event_label_list=event_labels,
-                time_resolution=1.0
-            )
-
-            event_based_metrics = sed_eval.sound_event.EventBasedMetrics(
-                event_label_list=event_labels,
-                t_collar=1.0
-            )
-
-            # Go through files
-            for file_pair in data:
-                segment_based_metrics.evaluate(
-                    reference_event_list=file_pair['reference_event_list'],
-                    estimated_event_list=file_pair['estimated_event_list']
-                )
-
-                event_based_metrics.evaluate(
-                    reference_event_list=file_pair['reference_event_list'],
-                    estimated_event_list=file_pair['estimated_event_list']
-                )
-
-            # Get only certain metrics
-            overall_segment_based_metrics = segment_based_metrics.results_overall_metrics()
-            curr_f1 = overall_segment_based_metrics['f_measure']['f_measure']
-            curr_error = overall_segment_based_metrics['error_rate']['error_rate']
+            curr_f1, curr_error = compute_sed_f1_errorrate(
+                reference_files, estimated_files)
 
             if curr_f1 > self.best_f1:
                 self.best_f1 = curr_f1
-#         self.model.save_weights(f"./9dB-mono/model-{self.env}-best-f1.h5")
+                self.model.save_weights(os.path.join(
+                    model_ckpt_folder_path, f"model-{self.env}-best-f1.ckpt"))
 
             if curr_error < self.best_error:
                 self.best_error = curr_error
-#         self.model.save_weights(f"./9dB-mono/model-{self.env}-best-error.h5")
+                self.model.save_weights(os.path.join(
+                    model_ckpt_folder_path, f"model-{self.env}-best-error.ckpt"))
 
             print("F-measure: {:.3f} vs {:.3f}".format(curr_f1, self.best_f1))
             print("Error rate: {:.3f} vs {:.3f}".format(
                 curr_error, self.best_error))
 
-            # Or print all metrics as reports
-
-
 class DataGenerator(tf.keras.utils.Sequence):
     'Generates data for Keras'
 
-    def __init__(self, mode: str, env: str, spec_transform=False, shuffle=shuffle, batch_size=batch_size):
+    def __init__(self, mode: str, env: str, spec_transform=False, shuffle: bool = shuffle, batch_size: int = batch_size):
         """Initialises the VOICe dataset class to load data for given mode and env. (the logmel_path and label_path variables are env and mode specific.)
 
         Args:
             mode (str): One of ['training', 'test', 'validation']
             env (str): Either one of ['vehicle', 'outdoor', 'indoor']
             spec_transform (bool, optional): SpecAugmentation for spectrograms performed if true. Defaults to False.
+            shuffle (bool, optional): If True, will shuffle indices at the end of every epoch. Defaults to shuffle.
+            batch_size (int, optional): Number of samples in each batch. Defaults to batch_size.
 
         Raises:
         Exception: If invalid environment type chosen.
         Exception: If invalid data mode
-    """
+        """
         if env not in envs:
             raise Exception('Invalid environment type.')
         if mode not in data_mode:

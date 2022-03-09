@@ -133,11 +133,11 @@ def weighted_mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     return mse(y_true, y_pred, True)
 
 
-def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: float = window_len_secs, num_subwindows: int = num_subwindows, num_classes: int = num_classes, win_ranges: Optional[List[List[float]]] = None) -> List[Tuple[float, float, str]]:
+def convert_model_preds_to_soundevents(preds: np.ndarray, window_len_secs: float = window_len_secs, num_subwindows: int = num_subwindows, num_classes: int = num_classes, win_ranges: Optional[List[List[float]]] = None) -> List[Tuple[float, float, str]]:
     """Converts model compatible annotations into human readable annotation, [event_start_time, event_end_time, event_name]. Note: 0<=event_start_time, event_end_time<=window_len_secs
 
     Args:
-        preds (torch.Tensor): Model compatible anns returned by model.predict() for a particular audio. Usually for a particular audio, there are multiple audio windows, consequently multiple predictions. NOTE: It should be detached from device.
+        preds (np.ndarray): Model compatible anns returned by model.predict() for a particular audio. Usually for a particular audio, there are multiple audio windows, consequently multiple predictions. NOTE: It should be detached from device.
         window_len_secs (float, optional): Length of audio window. Defaults to window_len_secs.
         num_subwindows (int, optional): Number of consecutive bins in compatible anns predicted by model. Defaults to num_subwindows.
         num_classes (int, optional): Number of classes in dataset. Defaults to num_classes.
@@ -146,7 +146,6 @@ def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: flo
     Returns:
         List[float, float, str]: List of human readable sound event, with event boundaries in [0, window_len_secs]
     """
-    preds = preds.cpu()
     sound_events = []
     bin_length = window_len_secs / num_subwindows
     for i in range(len(preds)):
@@ -169,11 +168,11 @@ def convert_model_preds_to_soundevents(preds: torch.Tensor, window_len_secs: flo
     return sound_events
 
 
-def predict_audio_path(model: "pl.LightningModule", audio_path: str):
+def predict_audio_path(model, audio_path: str):
     """Get model predictions for input audio given audio_path
 
     Args:
-        model (pl.LightningModule): Trained Model. Note: Ideally, the model env should be same as the env of the input audio.
+        model: Trained Model. Note: Ideally, the model env should be same as the env of the input audio.
         audio_path (str): path of the audio, ideally should be mono audio
 
     Returns:
@@ -184,7 +183,7 @@ def predict_audio_path(model: "pl.LightningModule", audio_path: str):
                        for audio_win in audio_wins])  # (N, C, H, W)
     preds = model.predict(logmels)
     sound_events = convert_model_preds_to_soundevents(
-        preds, win_ranges=window_ranges)
+        preds.cpu().numpy(), win_ranges=window_ranges)
     unified_sound_events = merge_sound_events(sound_events)
     return unified_sound_events
 
