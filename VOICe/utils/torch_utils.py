@@ -168,7 +168,7 @@ def convert_model_preds_to_soundevents(preds: np.ndarray, window_len_secs: float
     return sound_events
 
 
-def predict_audio_path(model, audio_path: str):
+def predict_audio_path(model, audio_path: str, channels_last: bool = False):
     """Get model predictions for input audio given audio_path
 
     Args:
@@ -179,7 +179,11 @@ def predict_audio_path(model, audio_path: str):
         List[float, float, str]: List of merged sound events with less precise sound boundaries.
     """
     audio_wins, window_ranges = construct_audio_windows(audio_path)
-    logmels = np.array([get_log_melspectrogram(audio_win).T[None, :]
+    if channels_last:
+        logmels = np.array([get_log_melspectrogram(audio_win).T[:, None]
+                       for audio_win in audio_wins])  # (N, H, W, C)
+    else:
+        logmels = np.array([get_log_melspectrogram(audio_win).T[None, :]
                        for audio_win in audio_wins])  # (N, C, H, W)
     preds = model.predict(logmels)
     sound_events = convert_model_preds_to_soundevents(

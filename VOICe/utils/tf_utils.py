@@ -79,7 +79,7 @@ class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
                 mono_audio_path = convert_path_to_mono(audio_path)
 
                 unified_sound_events = predict_audio_path(
-                    self.model, mono_audio_path)
+                    self.model, mono_audio_path, channels_last=True)
                 folder_path = os.path.join(os.path.dirname(
                     audio_path), 'tf_validation_predictions')
                 os.makedirs(folder_path, exist_ok=True)
