@@ -180,8 +180,9 @@ def predict_audio_path(model, audio_path: str, channels_last: bool = False):
     """
     audio_wins, window_ranges = construct_audio_windows(audio_path)
     if channels_last:
-        logmels = np.array([get_log_melspectrogram(audio_win).T[:, None]
+        logmels = np.array([get_log_melspectrogram(audio_win).T
                        for audio_win in audio_wins])  # (N, H, W, C)
+        logmels = np.expand_dims(logmels, axis=3)
     else:
         logmels = np.array([get_log_melspectrogram(audio_win).T[None, :]
                        for audio_win in audio_wins])  # (N, C, H, W)
