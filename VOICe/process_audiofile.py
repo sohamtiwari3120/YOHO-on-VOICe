@@ -2,6 +2,7 @@ from email.mime import audio
 from loguru import logger
 from config import snr
 from utils.data_utils import process_audio_file
+from utils.torch_utils import convert_model_preds_to_soundevents, merge_sound_events
 import argparse
 logger.add('process_audiofile.log', rotation='500 KB')
 
@@ -10,7 +11,13 @@ logger.add('process_audiofile.log', rotation='500 KB')
 def main(args):
     audio_path = args.audio_path
     logger.info(f'Starting processing of for audiofile {audio_path}')
-    process_audio_file(audio_path)
+    audio_wins, window_ranges, all_anns, all_model_compatible_anns = process_audio_file(audio_path)
+    for i, w in enumerate(window_ranges):
+        print(audio_wins[i])
+        print(w)
+        print(all_anns[i])
+        print(all_model_compatible_anns[i])
+        print(merge_sound_events(convert_model_preds_to_soundevents(all_model_compatible_anns[i])))
     logger.info(f'Finished processing of {audio_path}')
 
 if __name__ == '__main__':

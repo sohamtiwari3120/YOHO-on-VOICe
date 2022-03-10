@@ -344,16 +344,17 @@ def process_audio_file(audio_path):
     audio_wins, window_ranges = construct_audio_windows(
         mono_audio_path, sample_rate, window_len_secs, hop_len_secs)
     ann_path = audio_path.replace('.wav', '.txt')
+    all_anns = []
+    all_model_compatible_anns = []
     for i, w in enumerate(window_ranges):
         anns = extract_anns_for_audio_window(
             ann_path, w[0], w[1], window_len_secs)
+        all_anns.append(anns)
         compatible_ann = get_model_compatible_anns(
             anns, window_len_secs, num_subwindows)
-        print(audio_wins[i])
-        print(w)
-        print(anns)
-        print(compatible_ann)
+        all_model_compatible_anns.append(compatible_ann)
 
+    return audio_wins, window_ranges, all_anns, all_model_compatible_anns
 
 def get_logmel_label_paths(mode, env):
     """A function to simply return folder dirpaths where logmelspectrogram and label npy files will be stores.
