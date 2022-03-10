@@ -4,6 +4,7 @@ from config import snr
 from utils.data_utils import process_audio_file
 from utils.torch_utils import convert_model_preds_to_soundevents, merge_sound_events
 import argparse
+import numpy as np
 logger.add('process_audiofile.log', rotation='500 KB')
 
 
@@ -17,9 +18,9 @@ def main(args):
         print(w)
         print(all_anns[i])
         print(all_model_compatible_anns[i])
-        se = convert_model_preds_to_soundevents([all_model_compatible_anns[i]], win_ranges=w)
-        print(se)
-        print(merge_sound_events(se))
+    se = convert_model_preds_to_soundevents(np.array(all_model_compatible_anns), win_ranges=window_ranges)
+    print(se)
+    print(merge_sound_events(se))
     logger.info(f'Finished processing of {audio_path}')
 
 if __name__ == '__main__':
