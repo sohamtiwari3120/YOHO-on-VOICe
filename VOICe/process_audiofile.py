@@ -17,7 +17,9 @@ def main(args):
         print(w)
         print(all_anns[i])
         print(all_model_compatible_anns[i])
-        print(merge_sound_events(convert_model_preds_to_soundevents(all_model_compatible_anns[i])))
+        se = convert_model_preds_to_soundevents([all_model_compatible_anns[i]], win_ranges=w)
+        print(se)
+        print(merge_sound_events(se))
     logger.info(f'Finished processing of {audio_path}')
 
 if __name__ == '__main__':
