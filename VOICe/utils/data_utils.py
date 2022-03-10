@@ -21,6 +21,7 @@ data_mode = ['training', 'test', 'validation']
 
 file_paths: file_paths_type = {}
 
+
 def read_annotation(filepath):
     """Reads and returns the annotations in filepath
 
@@ -36,6 +37,7 @@ def read_annotation(filepath):
         for row in spamreader:
             events.append(row)
     return events
+
 
 for mode in data_mode:
     file_paths[mode] = {}
@@ -90,7 +92,7 @@ def construct_audio_windows(audio_path, sample_rate=sample_rate, window_len_secs
     hop_len = int(sample_rate*hop_len_secs)
 
     a, sr = sf.read(audio_path)
-    if sr!=sample_rate:
+    if sr != sample_rate:
         raise f'sr does not match sample_rate={sample_rate}hz for audio: {audio_path}!'
     if a.shape[0] < win_len:
         a_padded = np.zeros((win_len, ))
@@ -108,6 +110,7 @@ def construct_audio_windows(audio_path, sample_rate=sample_rate, window_len_secs
 
     # chunks large audio file into windows, and gives the start and end time of each window
     return a_ex, win_ranges
+
 
 def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecutive_event_silence: float = max_consecutive_event_silence) -> List[Tuple[float, float, str]]:
     """Function to merge consecutive annotations for the same event into one, and to decrease the precision of the predictions to 3rd decimal place.
@@ -172,6 +175,7 @@ def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecu
     all_events.sort(key=lambda x: x[0])
     # sorted all events by their start time, so can be possible that ann -> baby, gun,
     return all_events
+
 
 def extract_anns_for_audio_window(annotation_path, window_start_secs, window_end_secs, window_len_secs=window_len_secs):
     """Given the annotation file, returns the annotations corresponding to the audio window in focus.
@@ -330,6 +334,27 @@ def generate_windows_and_anns(mode: str, env: str, sample_rate=sample_rate, wind
     return audio_windows, labels
 
 
+def process_audio_file(audio_path):
+    """Auxiliary function to process single audio files and print the anns and audio windows
+
+    Args:
+        audio_path (_type_): _description_
+    """    
+    mono_audio_path = convert_path_to_mono(audio_path)
+    audio_wins, window_ranges = construct_audio_windows(
+        mono_audio_path, sample_rate, window_len_secs, hop_len_secs)
+    ann_path = audio_path.replace('.wav', '.txt')
+    for i, w in enumerate(window_ranges):
+        anns = extract_anns_for_audio_window(
+            ann_path, w[0], w[1], window_len_secs)
+        compatible_ann = get_model_compatible_anns(
+            anns, window_len_secs, num_subwindows)
+        print(audio_wins[i])
+        print(w)
+        print(anns)
+        print(compatible_ann)
+
+
 def get_logmel_label_paths(mode, env):
     """A function to simply return folder dirpaths where logmelspectrogram and label npy files will be stores.
 
@@ -414,7 +439,8 @@ class VOICeDataset(Dataset):
         return len(self.logmel_npy)
 
     def __getitem__(self, idx):
-        X = np.load(self.logmel_npy[idx])[None, :] # to convert (H, W) -> (C, H, W)
+        # to convert (H, W) -> (C, H, W)
+        X = np.load(self.logmel_npy[idx])[None, :]
         # (channels=1, height, width)
         y = np.load(self.label_npy[idx])
 
@@ -430,7 +456,8 @@ class VOICeDataset(Dataset):
 
 class VOICeDataModule(pl.LightningDataModule):
     """PyTorch-Lightning data module for VOICe dataset.
-    """    
+    """
+
     def __init__(self, env: str, batch_size=batch_size):
         super().__init__()
         if env not in envs:
@@ -444,8 +471,10 @@ class VOICeDataModule(pl.LightningDataModule):
         if stage == "fit" or stage is None:
             self.voice_train = VOICeDataset('training', self.env, False)
             self.voice_val = VOICeDataset('validation', self.env, False)
-            print(f'train dataloader: len - {self.voice_train.__len__()}, batch_size - {self.batch_size}, num_batches_per_epoch = {self.voice_train.__len__()/self.batch_size}')
-            print(f'val dataloader: len - {self.voice_val.__len__()}, batch_size - {self.batch_size}, num_batches_per_epoch = {self.voice_val.__len__()/self.batch_size}')
+            print(
+                f'train dataloader: len - {self.voice_train.__len__()}, batch_size - {self.batch_size}, num_batches_per_epoch = {self.voice_train.__len__()/self.batch_size}')
+            print(
+                f'val dataloader: len - {self.voice_val.__len__()}, batch_size - {self.batch_size}, num_batches_per_epoch = {self.voice_val.__len__()/self.batch_size}')
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
