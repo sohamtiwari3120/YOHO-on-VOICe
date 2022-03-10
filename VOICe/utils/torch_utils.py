@@ -187,8 +187,10 @@ def predict_audio_path(model, audio_path: str, channels_last: bool = False):
         logmels = np.array([get_log_melspectrogram(audio_win).T[None, :]
                        for audio_win in audio_wins])  # (N, C, H, W)
     preds = model.predict(logmels)
+    if not isinstance(preds, np.ndarray):
+        preds = preds.cpu().numpy()
     sound_events = convert_model_preds_to_soundevents(
-        preds.cpu().numpy(), win_ranges=window_ranges)
+        preds, win_ranges=window_ranges)
     unified_sound_events = merge_sound_events(sound_events)
     return unified_sound_events
 
