@@ -5,7 +5,7 @@ import glob
 
 from utils.evaluate_utils import compute_sed_f1_errorrate
 from config import num_classes, snr, shuffle, batch_size, input_height, input_width, num_subwindows
-from utils.data_utils import convert_path_to_mono, file_paths, envs, data_mode, get_logmel_label_paths
+from utils.data_utils import convert_path_to_mono, file_paths, envs, data_mode, get_logmel_label_paths, sort_nicely
 from utils.torch_utils import predict_audio_path
 from utils.SpecAugment import spec_augment_tensorflow
 
@@ -67,13 +67,14 @@ class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
         self.best_f1 = 0.0
         self.best_error = np.inf
         self.env = env
+        self.model_ckpt_folder_path = os.path.join(os.path.dirname(
+            os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', 'tf')
+        os.makedirs(self.model_ckpt_folder_path, exist_ok=True)
 
     def on_epoch_end(self, epoch, logs=None) -> None:
         reference_files = []
         estimated_files = []
-        model_ckpt_folder_path = os.path.join(os.path.dirname(
-            os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', 'tf')
-        os.makedirs(model_ckpt_folder_path, exist_ok=True)
+        
         if epoch > 1:
             for audio_path in file_paths['validation'][self.env]:
                 mono_audio_path = convert_path_to_mono(audio_path)
@@ -81,7 +82,7 @@ class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
                 unified_sound_events = predict_audio_path(
                     self.model, mono_audio_path, channels_last=True)
                 folder_path = os.path.join(os.path.dirname(
-                    audio_path), 'tf_validation_predictions')
+                    audio_path), 'tf_validation_predictions', self.env)
                 os.makedirs(folder_path, exist_ok=True)
 
                 reference_files.append(audio_path.replace('.wav', '.txt'))
@@ -100,12 +101,12 @@ class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
             if curr_f1 > self.best_f1:
                 self.best_f1 = curr_f1
                 self.model.save_weights(os.path.join(
-                    model_ckpt_folder_path, f"model-{self.env}-best-f1.ckpt"))
+                    self.model_ckpt_folder_path, f"model-{self.env}-best-f1.ckpt"))
 
             if curr_error < self.best_error:
                 self.best_error = curr_error
                 self.model.save_weights(os.path.join(
-                    model_ckpt_folder_path, f"model-{self.env}-best-error.ckpt"))
+                    self.model_ckpt_folder_path, f"model-{self.env}-best-error.ckpt"))
 
             print("F-measure: {:.3f} vs {:.3f}".format(curr_f1, self.best_f1))
             print("Error rate: {:.3f} vs {:.3f}".format(
@@ -139,7 +140,9 @@ class DataGenerator(tf.keras.utils.Sequence):
         self.spec_transform = spec_transform
 
         self.logmel_npy = glob.glob(self.logmel_path+f'/logmelspec-*.npy')
+        sort_nicely(self.logmel_npy)
         self.label_npy = glob.glob(self.label_path+f'/label-*.npy')
+        sort_nicely(self.label_npy)
         self.indices = list(range(len(self.logmel_npy)))
         self.shuffle = shuffle
         self.batch_size = batch_size
@@ -178,5 +181,6 @@ class DataGenerator(tf.keras.utils.Sequence):
         return X, y
 
     def on_epoch_end(self):
+        print(f'Called datagenerator on_epoch_end with self.shuffle={self.shuffle}')
         if self.shuffle == True:
             np.random.shuffle(self.indices)

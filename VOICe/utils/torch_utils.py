@@ -151,20 +151,20 @@ def convert_model_preds_to_soundevents(preds: np.ndarray, window_len_secs: float
     for i in range(len(preds)):
         # len(preds) = num_batches = number of input audio spectrograms to predict function.
         p = preds[i, :, :]
-        events_curr_bin = []
-        for j in range(len(p)):
+        events_curr_audio_win = []
+        for bin in range(len(p)):
             for k in range(num_classes):
-                if p[j][k*3] >= 0.5:
-                    start = bin_length * j + bin_length * \
-                        p[j][k*3+1]
-                    end = p[j][k*3+2] * bin_length + start
+                if p[bin][k*3] >= 0.5:
+                    start = bin_length * bin + bin_length * \
+                        p[bin][k*3+1]
+                    end = p[bin][k*3+2] * bin_length + start
                     if win_ranges is not None:
                         start += win_ranges[i][0]
                         end += win_ranges[i][0]
-                    events_curr_bin.append(
-                        [start.item(), end.item(), rev_class_dict[k]])
+                    events_curr_audio_win.append(
+                        [start, end, rev_class_dict[k]])
 
-        sound_events += events_curr_bin
+        sound_events += events_curr_audio_win
     return sound_events
 
 

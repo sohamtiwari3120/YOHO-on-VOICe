@@ -15,6 +15,7 @@ from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_h
 from tqdm import tqdm
 from utils.types import file_paths_type
 from utils.SpecAugment import spec_augment_pytorch
+from utils.regex_utils import sort_nicely
 
 envs = ['vehicle', 'outdoor', 'indoor']
 data_mode = ['training', 'test', 'validation']
@@ -434,7 +435,9 @@ class VOICeDataset(Dataset):
         self.spec_transform = spec_transform
 
         self.logmel_npy = glob.glob(self.logmel_path+f'/logmelspec-*.npy')
+        sort_nicely(self.logmel_npy)
         self.label_npy = glob.glob(self.label_path+f'/label-*.npy')
+        sort_nicely(self.label_npy)
 
     def __len__(self):
         return len(self.logmel_npy)

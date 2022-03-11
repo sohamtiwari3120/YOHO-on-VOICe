@@ -12,7 +12,8 @@ snr = '9dB'
 sample_rate = 44100
 window_len_secs = 2.56
 hop_len_secs = 1.96
-max_consecutive_event_silence = 1.0
+max_consecutive_event_silence = 0.3
+num_subwindows = 9
 
 # dataset melspec
 mel_hop_len = 441
@@ -24,8 +25,7 @@ fmax = int(sample_rate/2)
 
 # common framework agnostic model params
 env = 'indoor'
-learning_rate = 2e-3
-num_subwindows = 9
+learning_rate = 1e-3
 batch_size = 16
 # note, we are saving transpose of the logmelspecs
 input_height = 257 # hence 257 is actually the length of the time dimension before transpose

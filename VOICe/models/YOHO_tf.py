@@ -36,7 +36,7 @@ class YohoTF:
                                    activation=None, name="layer1/conv",
                                    kernel_regularizer=l2(l2_kernel_reg_first_conv2d), bias_regularizer=l2(l2_bias_reg_first_conv2d))(inputs)
         X = tf.keras.layers.BatchNormalization(
-            center=True, scale=False, epsilon=1e-4, name="layer1/bn")(X)
+            center=True, scale=False, epsilon=batch_norm_eps, name="layer1/bn")(X)
         X = tf.keras.layers.ReLU(name="layer1/relu")(X)
         # X = tf.keras.layers.SpatialDropout2D(0.5)(X)
         for i in range(len(depthwise_layers)):
