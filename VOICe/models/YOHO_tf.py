@@ -2,7 +2,7 @@ from typing import List
 import os
 import tensorflow as tf
 from tensorflow.keras.regularizers import l2
-from config import depthwise_layers, input_height, input_width, num_classes, l2_bias_reg_first_conv2d, l2_bias_reg_remaining_conv2d, l2_kernel_reg_first_conv2d, l2_kernel_reg_remaining_conv2d, batch_norm_eps, spatial_dropout, learning_rate, epochs, fit_verbose, env, min_delta,tf_patience, monitor
+from config import depthwise_layers, input_height, input_width, num_classes, l2_bias_reg_first_conv2d, l2_bias_reg_remaining_conv2d, l2_kernel_reg_first_conv2d, l2_kernel_reg_remaining_conv2d, batch_norm_eps, spatial_dropout, learning_rate, epochs, fit_verbose, env, min_delta,tf_patience, tf_monitor
 from utils.types import depthwise_layers_type
 from utils.tf_utils import MonitorSedF1CallbackTf
 from utils.data_utils import envs
@@ -74,7 +74,7 @@ class YohoTF:
             learning_rate=learning_rate), loss=loss_function)
         if callbacks is None:
             callbacks = [MonitorSedF1CallbackTf(self.env),
-                         tf.keras.callbacks.EarlyStopping(monitor=monitor,
+                         tf.keras.callbacks.EarlyStopping(monitor=tf_monitor,
                                                           min_delta=min_delta, patience=tf_patience)]
         self.model.fit(x=train_data,
                        validation_data=validation_data,

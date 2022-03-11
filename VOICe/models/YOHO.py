@@ -4,12 +4,12 @@ import torch
 from torch.optim import Adam
 from torch.nn import functional as F
 from torch import nn
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning.core.lightning import LightningModule
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
-from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, adam_eps, initialize_layer
+from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, adam_eps, initialize_layer, monitor, loss_function_str
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse, my_loss_fn
-import torchvision
 
 
 def init_layer(layer):
@@ -166,23 +166,6 @@ class Yoho(nn.Module):
         return x
 
 
-class TestModel(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.bw2col = nn.Sequential(
-            InitializedBatchNorm2d(1),
-            # (128, 656) -> (64, 656)
-            InitializedConv2d(1, 10, (64, 2), padding=0), nn.ReLU(),
-            InitializedConv2d(10, 3, 1, padding=0), nn.ReLU())
-        self.mv2 = torchvision.models.mobilenet_v2(pretrained=True)
-
-    def forward(self, input):
-        x = input
-        x = self.bw2col(x) # -> (batch_size, 3, n_mels, num_frames)
-        x = self.mv2.features(x)
-        return x
-
-
 class YohoLM(LightningModule):
     """PyTorch (Lightning) Module for YOHO algorithm
 
@@ -193,13 +176,12 @@ class YohoLM(LightningModule):
     def __init__(self,
                  depthwise_layers: depthwise_layers_type = depthwise_layers,
                  num_classes: int = num_classes,
-                 input_height: int = input_height, input_width: int = input_width, learning_rate: double = learning_rate, loss_function=my_loss_fn,
+                 input_height: int = input_height, input_width: int = input_width, learning_rate: double = learning_rate, loss_function=eval(loss_function_str),
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoLM, self).__init__(*args, **kwargs)
         self.model = Yoho(depthwise_layers, num_classes,
                           input_height, input_width)
-#         self.model = TestModel()
         self.learning_rate = learning_rate
         self.loss_function = loss_function
 
@@ -229,25 +211,25 @@ class YohoLM(LightningModule):
                    lr=self.learning_rate, eps=adam_eps)
         return {
             "optimizer": opt,
-            # "lr_scheduler": {
-            #     "scheduler": ReduceLROnPlateau(opt, mode=mode, patience=patience, factor=factor),
-            #     "monitor": "loss",
-            #     # If "monitor" references validation metrics, then "frequency" should be set to a
-            #     # multiple of "trainer.check_val_every_n_epoch".
-            # },
+            "lr_scheduler": {
+                "scheduler": ReduceLROnPlateau(opt, mode=mode, patience=patience, factor=factor),
+                "monitor": monitor,
+                # If "monitor" references validation metrics, then "frequency" should be set to a
+                # multiple of "trainer.check_val_every_n_epoch".
+            }
         }
 
-    def on_fit_start(self) -> None:
-        print(f"\n\n\n\nModel Params:\n")
-        for param in self.model.parameters():
-            print(param)
-        print(f"\nEnd\n\n")
+    # def on_fit_start(self) -> None:
+    #     print(f"\n\n\n\nModel Params:\n")
+    #     for param in self.model.parameters():
+    #         print(param)
+    #     print(f"\nEnd\n\n")
 
-    def on_fit_end(self) -> None:
-        print(f"\n\n\n\nModel Params:\n")
-        for param in self.model.parameters():
-            print(param)
-        print(f"\nEnd\n\n")
+    # def on_fit_end(self) -> None:
+    #     print(f"\n\n\n\nModel Params:\n")
+    #     for param in self.model.parameters():
+    #         print(param)
+    #     print(f"\nEnd\n\n")
 
     def predict(self, x):
         with torch.no_grad():

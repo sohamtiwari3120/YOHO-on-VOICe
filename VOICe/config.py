@@ -82,7 +82,7 @@ fit_verbose = 1
 # tensorflow earlystopping callback
 min_delta=0.1
 tf_patience=5
-monitor='val_loss'
+tf_monitor='val_loss'
 
 # PYTORCH
 # Pytorch SpecAugment
@@ -96,6 +96,7 @@ time_mask_num=1
 mode = 'min'
 patience = 5
 factor = 0.5
+monitor='validation_loss'
 
 # PL trainer params
 devices="auto"
