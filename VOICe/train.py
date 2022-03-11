@@ -49,7 +49,7 @@ def pytorch(args):
         model.learning_rate = new_lr
         
     # Fit model
-    # trainer.fit(model, voice_dm)
+    trainer.fit(model, voice_dm)
     logger.info(f'Finished training of model for {env} audio.')
 
 @logger.catch

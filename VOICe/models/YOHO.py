@@ -197,9 +197,9 @@ class YohoLM(LightningModule):
                  *args: Any, **kwargs: Any) -> None:
 
         super(YohoLM, self).__init__(*args, **kwargs)
-        # self.model = Yoho(depthwise_layers, num_classes,
-        #                   input_height, input_width)
-        self.model = TestModel()
+        self.model = Yoho(depthwise_layers, num_classes,
+                          input_height, input_width)
+#         self.model = TestModel()
         self.learning_rate = learning_rate
         self.loss_function = loss_function
 
