@@ -114,10 +114,10 @@ def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> t
 
         squared_difference = torch.multiply(
             squared_difference, probability_multiplier)  # element wise multiplication
-        # Note the `axis=-1`
+        
     loss = torch.sum(squared_difference, dim=(-1, -2))
     assert loss.shape == (batch_size, )
-    return loss
+    return loss.mean()
 
 # try changing loss to l1
 # data input and output could be problematic
