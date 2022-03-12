@@ -6,6 +6,7 @@ import os
 from config import source_env, target_env, data_mode, backend, backends, snr
 from utils.torch_utils import generate_save_predictions
 from utils.evaluate_utils import compute_sed_f1_errorrate
+from utils.data_utils import data_modes
 
 
 @logger.catch
@@ -29,8 +30,8 @@ def evaluate(args):
         model, data_mode, target_env)
     curr_f1, curr_error = compute_sed_f1_errorrate(reference_files, estimated_files)
 
-    print("F-measure: {:.3f}".format(curr_f1))
-    print("Error rate: {:.3f}".format(curr_error))
+    logger.info("F-measure: {:.3f}".format(curr_f1))
+    logger.info("Error rate: {:.3f}".format(curr_error))
 
     # Or print all metrics as reports
     return (curr_f1, curr_error)
@@ -43,7 +44,7 @@ if __name__ == '__main__':
                         default=backend, choices=backends)
     parser.add_argument('-se', '--source_env', type=str, default=source_env)
     parser.add_argument('-te', '--target_env', type=str, default=target_env)
-    parser.add_argument('-m', '--data_mode', type=str, default=data_mode)
+    parser.add_argument('-m', '--data_mode', type=str, default=data_mode, choices=data_modes)
 
     args = parser.parse_args()
-    best_f1, best_error = evaluate(args)
+    f1, error = evaluate(args)

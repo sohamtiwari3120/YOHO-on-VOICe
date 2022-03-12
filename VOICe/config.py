@@ -60,7 +60,7 @@ backend = backends[0]
 # evaluate
 source_env = 'indoor'
 target_env = 'vehicle'
-data_mode = 'testing'
+data_mode = 'test'
 
 # TENSORFLOW
 # tensorflow regularizers
