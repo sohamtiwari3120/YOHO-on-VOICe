@@ -16,7 +16,7 @@ def evaluate(args):
     data_mode = args.data_mode
 
     logger.info(
-        f'Starting evalution on {data_mode} data for both source and target env.')
+        f'Starting evalution on {data_mode} data for source - {source_env} and target - {target_env}.')
     logger.add(
         f'{args.backend}_eval_src_{source_env}_target_{target_env}.log', rotation='500 KB')
     logger.info(f'Loading best f1 model for {source_env} audio.')
