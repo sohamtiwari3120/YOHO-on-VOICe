@@ -24,6 +24,8 @@ def evaluate(args):
         os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', backends[0])
     chkpt_path = os.path.join(model_ckpt_folder_path,
                               f"model-{source_env}-best-f1.ckpt")
+    if not os.path.exists:
+        raise Exception(f'Not found: {chkpt_path}.')
     model = YohoLM.load_from_checkpoint(chkpt_path)
     logger.info(f'Loaded model checkpoint: {chkpt_path}')
     reference_files, estimated_files = generate_save_predictions(
