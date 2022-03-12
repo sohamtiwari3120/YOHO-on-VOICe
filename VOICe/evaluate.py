@@ -32,8 +32,8 @@ def evaluate(args):
         model, data_mode, target_env)
     curr_f1, curr_error = compute_sed_f1_errorrate(reference_files, estimated_files)
 
-    logger.info("F-measure: {:.3f}".format(curr_f1))
-    logger.info("Error rate: {:.3f}".format(curr_error))
+    logger.success("F-measure: {:.3f}".format(curr_f1))
+    logger.success("Error rate: {:.3f}".format(curr_error))
 
     # Or print all metrics as reports
     return (curr_f1, curr_error)
