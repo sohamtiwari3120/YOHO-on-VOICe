@@ -18,7 +18,7 @@ from utils.SpecAugment import spec_augment_pytorch
 from utils.regex_utils import sort_nicely
 
 envs = ['vehicle', 'outdoor', 'indoor']
-data_mode = ['training', 'test', 'validation']
+data_modes = ['training', 'test', 'validation']
 
 file_paths: file_paths_type = {}
 
@@ -40,7 +40,7 @@ def read_annotation(filepath):
     return events
 
 
-for mode in data_mode:
+for mode in data_modes:
     file_paths[mode] = {}
     base_path = os.path.join(os.path.dirname(
         os.path.dirname(__file__)), 'data', snr)
@@ -70,7 +70,7 @@ def convert_to_mono():
         output, err = p.communicate()
 
     # adding subfolders in place
-    for mode in data_mode:
+    for mode in data_modes:
         for e in envs:
             os.makedirs(os.path.join(
                 base_dir, f'{snr}-mono', f"{mode}-data", f"{e}"), exist_ok=True)
@@ -313,7 +313,7 @@ def generate_windows_and_anns(mode: str, env: str, sample_rate=sample_rate, wind
     """
     if env not in envs:
         raise Exception('Invalid environment type.')
-    if mode not in data_mode:
+    if mode not in data_modes:
         raise Exception('Invalid data mode.')
     audio_windows = []
     labels = []
@@ -394,7 +394,7 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, snr=snr):
     """
     if env not in envs:
         raise Exception('Invalid environment type.')
-    if mode not in data_mode:
+    if mode not in data_modes:
         raise Exception('Invalid data mode.')
 
     logmel_path, label_path = get_logmel_label_paths(mode, env)
@@ -427,7 +427,7 @@ class VOICeDataset(Dataset):
     """
         if env not in envs:
             raise Exception('Invalid environment type.')
-        if mode not in data_mode:
+        if mode not in data_modes:
             raise Exception('Invalid data mode.')
         self.env = env
         self.mode = mode

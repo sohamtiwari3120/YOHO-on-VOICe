@@ -57,6 +57,11 @@ depthwise_layers = [
 backends = ['pytorch', 'tensor_flow']
 backend = backends[0]
 
+# evaluate
+source_env = 'indoor'
+target_env = 'vehicle'
+data_mode = 'testing'
+
 # TENSORFLOW
 # tensorflow regularizers
 l2_kernel_reg_first_conv2d = 1e-3

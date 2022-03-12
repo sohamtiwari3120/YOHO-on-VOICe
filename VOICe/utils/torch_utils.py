@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple, Union
 import os
 import numpy as np
 import torch
-from config import num_classes, window_len_secs, num_classes, num_subwindows, rev_class_dict, batch_size, snr
+from config import num_classes, window_len_secs, num_classes, num_subwindows, rev_class_dict, backends, snr
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 from utils.evaluate_utils import compute_sed_f1_errorrate
@@ -87,7 +87,7 @@ def my_loss_fn(y_true, y_pred):
     ss_1 = y_true[:, :, 3]  # (5, 5)
     ss_2 = y_true[:, :, 6]  # (5, 5)
     sss = torch.stack((ss_True, ss_0, ss_0, ss_True, ss_1, ss_1,
-                    ss_True, ss_2, ss_2,), dim=2)
+                       ss_True, ss_2, ss_2,), dim=2)
     squared_difference = torch.multiply(
         squared_difference, sss)  # element wise multiplication
     # Note the `axis=-1`
@@ -114,13 +114,14 @@ def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> t
 
         squared_difference = torch.multiply(
             squared_difference, probability_multiplier)  # element wise multiplication
-        
+
     loss = torch.sum(squared_difference, dim=(-1, -2))
     return loss.mean()
 
 # try changing loss to l1
 # data input and output could be problematic
 # print parameters of every layer, if not changing, then not training
+
 
 def weighted_mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     """Computes Weighted Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.
@@ -180,11 +181,11 @@ def predict_audio_path(model, audio_path: str, channels_last: bool = False):
     audio_wins, window_ranges = construct_audio_windows(audio_path)
     if channels_last:
         logmels = np.array([get_log_melspectrogram(audio_win).T
-                       for audio_win in audio_wins])  # (N, H, W, C)
+                            for audio_win in audio_wins])  # (N, H, W, C)
         logmels = np.expand_dims(logmels, axis=3)
     else:
         logmels = np.array([get_log_melspectrogram(audio_win).T[None, :]
-                       for audio_win in audio_wins])  # (N, C, H, W)
+                            for audio_win in audio_wins])  # (N, C, H, W)
     preds = model.predict(logmels)
     if not isinstance(preds, np.ndarray):
         preds = preds.cpu().numpy()
@@ -193,6 +194,29 @@ def predict_audio_path(model, audio_path: str, channels_last: bool = False):
     unified_sound_events = merge_sound_events(sound_events)
     return unified_sound_events
 
+
+def generate_save_predictions(model, data_mode, env):
+    reference_files = []
+    estimated_files = []
+    for audio_path in file_paths[data_mode][env]:
+        mono_audio_path = convert_path_to_mono(audio_path)
+
+        unified_sound_events = predict_audio_path(
+            model, mono_audio_path)
+        folder_path = os.path.join(os.path.dirname(
+            audio_path), f'{data_mode}_predictions')
+        os.makedirs(folder_path, exist_ok=True)
+
+        reference_files.append(audio_path.replace('.wav', '.txt'))
+        file_name = os.path.basename(audio_path).replace(
+            '.wav', "-se-prediction.txt")
+        file_path = os.path.join(folder_path, file_name)
+        estimated_files.append(file_path)
+
+        with open(file_path, 'w') as fp:
+            fp.write('\n'.join('{},{},{}'.format(round(x[0], 5), round(
+                x[1], 5), x[2]) for x in unified_sound_events))
+    return reference_files, estimated_files
 
 class MonitorSedF1Callback(Callback):
     """PyTorch Lightning Callback for monitoring f1 scores for sed task and storing model weights for best f1 scores and best error rates.
@@ -206,31 +230,15 @@ class MonitorSedF1Callback(Callback):
         self.best_f1 = 0.0
         self.best_error = np.inf
         self.env = env
+        self.model_ckpt_folder_path = os.path.join(os.path.dirname(
+            os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', backends[0])
+        os.makedirs(self.model_ckpt_folder_path, exist_ok=True)
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         epoch = trainer.current_epoch
-        reference_files = []
-        estimated_files = []
+
         if epoch > 1:
-            for audio_path in file_paths['validation'][self.env]:
-                mono_audio_path = convert_path_to_mono(audio_path)
-
-                unified_sound_events = predict_audio_path(
-                    pl_module, mono_audio_path)
-                folder_path = os.path.join(os.path.dirname(
-                    audio_path), 'validation_predictions')
-                os.makedirs(folder_path, exist_ok=True)
-
-                reference_files.append(audio_path.replace('.wav', '.txt'))
-                file_name = os.path.basename(audio_path).replace(
-                    '.wav', "-se-prediction.txt")
-                file_path = os.path.join(folder_path, file_name)
-                estimated_files.append(file_path)
-
-                with open(file_path, 'w') as fp:
-                    fp.write('\n'.join('{},{},{}'.format(round(x[0], 5), round(
-                        x[1], 5), x[2]) for x in unified_sound_events))
-
+            reference_files, estimated_files = generate_save_predictions(pl_module, 'validation', self.env)
             curr_f1, curr_error = compute_sed_f1_errorrate(
                 reference_files, estimated_files)
             self.log('f1', curr_f1)
@@ -238,13 +246,13 @@ class MonitorSedF1Callback(Callback):
 
             if curr_f1 > self.best_f1:
                 self.best_f1 = curr_f1
-                trainer.save_checkpoint(
-                    f"./model_checkpoints/{snr}-mono/model-{self.env}-best-f1.ckpt")
+                trainer.save_checkpoint(os.path.join(
+                    self.model_ckpt_folder_path, f"model-{self.env}-best-f1.ckpt"))
 
             if curr_error < self.best_error:
                 self.best_error = curr_error
-                trainer.save_checkpoint(
-                    f"./model_checkpoints/{snr}-mono/model-{self.env}-best-error.ckpt")
+                trainer.save_checkpoint(os.path.join(
+                    self.model_ckpt_folder_path, f"model-{self.env}-best-error.ckpt"))
 
             print("F-measure: {:.3f} vs {:.3f}".format(curr_f1, self.best_f1))
             print("Error rate: {:.3f} vs {:.3f}".format(

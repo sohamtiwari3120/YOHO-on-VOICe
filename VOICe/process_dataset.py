@@ -1,6 +1,6 @@
 from loguru import logger
 from config import snr
-from utils.data_utils import generate_windows_and_anns, save_logmelspec_and_labels, convert_to_mono, envs, data_mode
+from utils.data_utils import generate_windows_and_anns, save_logmelspec_and_labels, convert_to_mono, envs, data_modes
 logger.add('process_dataset.log', rotation='500 KB')
 
 @logger.catch
@@ -9,7 +9,7 @@ def main():
     logger.info(f'First converting all audios to mono.')
     convert_to_mono()
     logger.info(f'Finished conversion to mono audio.')
-    for mode in data_mode:
+    for mode in data_modes:
         for env in envs:
             logger.info(f'Processing {mode}, {env} data.')
             audio_windows, labels = generate_windows_and_anns(mode, env)

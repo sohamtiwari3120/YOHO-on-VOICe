@@ -4,8 +4,8 @@ import numpy as np
 import glob
 
 from utils.evaluate_utils import compute_sed_f1_errorrate
-from config import num_classes, snr, shuffle, batch_size, input_height, input_width, num_subwindows
-from utils.data_utils import convert_path_to_mono, file_paths, envs, data_mode, get_logmel_label_paths, sort_nicely
+from config import num_classes, snr, shuffle, batch_size, input_height, input_width, num_subwindows, backends
+from utils.data_utils import convert_path_to_mono, file_paths, envs, data_modes, get_logmel_label_paths, sort_nicely
 from utils.torch_utils import predict_audio_path
 from utils.SpecAugment import spec_augment_tensorflow
 
@@ -68,7 +68,7 @@ class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
         self.best_error = np.inf
         self.env = env
         self.model_ckpt_folder_path = os.path.join(os.path.dirname(
-            os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', 'tf')
+            os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', backends[1])
         os.makedirs(self.model_ckpt_folder_path, exist_ok=True)
 
     def on_epoch_end(self, epoch, logs=None) -> None:
@@ -131,7 +131,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         """
         if env not in envs:
             raise Exception('Invalid environment type.')
-        if mode not in data_mode:
+        if mode not in data_modes:
             raise Exception('Invalid data mode.')
         self.env = env
         self.mode = mode
