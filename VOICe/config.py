@@ -109,3 +109,13 @@ adam_eps = 1e-7
 
 # layer initializer
 initialize_layer: bool = True
+
+# PyTorch Dataloader
+train_shuffle = True
+val_shuffle = True
+test_shuffle = False
+
+# PyTorch VOICe Dataset
+train_spec_transform = True
+val_spec_transform = False
+test_spec_transform = False

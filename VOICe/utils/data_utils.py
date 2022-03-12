@@ -11,7 +11,7 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 from subprocess import Popen, PIPE
-from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers, rev_class_dict, max_consecutive_event_silence
+from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers, rev_class_dict, max_consecutive_event_silence, train_shuffle, val_shuffle, test_shuffle, train_spec_transform, val_spec_transform, test_spec_transform
 from tqdm import tqdm
 from utils.types import file_paths_type
 from utils.SpecAugment import spec_augment_pytorch
@@ -340,7 +340,7 @@ def process_audio_file(audio_path):
 
     Args:
         audio_path (_type_): _description_
-    """    
+    """
     mono_audio_path = convert_path_to_mono(audio_path)
     audio_wins, window_ranges = construct_audio_windows(
         mono_audio_path, sample_rate, window_len_secs, hop_len_secs)
@@ -356,6 +356,7 @@ def process_audio_file(audio_path):
         all_model_compatible_anns.append(compatible_ann)
 
     return audio_wins, window_ranges, all_anns, all_model_compatible_anns
+
 
 def get_logmel_label_paths(mode, env):
     """A function to simply return folder dirpaths where logmelspectrogram and label npy files will be stores.
@@ -462,29 +463,58 @@ class VOICeDataModule(pl.LightningDataModule):
     """PyTorch-Lightning data module for VOICe dataset.
     """
 
-    def __init__(self, env: str, batch_size=batch_size):
+    def __init__(self, env: str, batch_size:int =batch_size, train_shuffle: bool = train_shuffle, val_shuffle: bool = val_shuffle, test_shuffle: bool = test_shuffle, train_spec_transform: bool = train_spec_transform, val_spec_transform: bool = val_spec_transform, test_spec_transform: bool = test_spec_transform, num_workers: int = num_workers):
+        """PyTorch Lightning Custom LightninDataModule for VOICe Dataset
+
+        Args:
+            env (str): Should be one of  ['vehicle', 'outdoor', 'indoor'].
+            batch_size (int, optional): Batch size to be used for all train, test and validation data loaders. Defaults to batch_size.
+            train_shuffle (bool, optional): Whether to shuffle training data. Defaults to train_shuffle.
+            val_shuffle (bool, optional): Whether to shuffle validation data. Defaults to val_shuffle.
+            test_shuffle (bool, optional): Whether to shuffle test data. Defaults to test_shuffle.
+            train_spec_transform (bool, optional): Whether to use spec transform for train data. Defaults to train_spec_transform.
+            val_spec_transform (bool, optional): Whether to use spec transform for validation data. Defaults to val_spec_transform.
+            test_spec_transform (bool, optional): Whether to use spec transform for test data. Defaults to test_spec_transform.
+            num_workers (int, optional): Num of cpu workers for Dataloader to take advantage of. Defaults to num_workers.
+
+        Raises:
+            Exception: Invalid environment type. Should be one of  ['vehicle', 'outdoor', 'indoor'].
+        """     
         super().__init__()
         if env not in envs:
             raise Exception('Invalid environment type.')
         self.env = env
         self.batch_size = batch_size
+        # dataloader shuffle
+        self.train_shuffle = train_shuffle
+        self.val_shuffle = val_shuffle
+        self.test_shuffle = test_shuffle
+        # dataset spec transform
+        self.train_spec_transform = train_spec_transform
+        self.val_spec_transform = val_spec_transform
+        self.test_spec_transform = test_spec_transform
+
+        self.num_workers = num_workers
 
     def setup(self, stage: Optional[str] = None):
 
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
-            self.voice_train = VOICeDataset('training', self.env, False)
-            self.voice_val = VOICeDataset('validation', self.env, False)
+            self.voice_train = VOICeDataset(
+                'training', self.env, self.train_spec_transform)
+            self.voice_val = VOICeDataset(
+                'validation', self.env, self.val_spec_transform)
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
-            self.voice_test = VOICeDataset('test', self.env, False)
+            self.voice_test = VOICeDataset(
+                'test', self.env, self.test_spec_transform)
 
     def train_dataloader(self):
-        return DataLoader(self.voice_train, batch_size=self.batch_size, num_workers=num_workers)
+        return DataLoader(self.voice_train, batch_size=self.batch_size, shuffle=self.train_shuffle, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.voice_val, batch_size=self.batch_size, num_workers=num_workers)
+        return DataLoader(self.voice_val, batch_size=self.batch_size, shuffle=self.val_shuffle, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.voice_test, batch_size=self.batch_size, num_workers=num_workers)
+        return DataLoader(self.voice_test, batch_size=self.batch_size, shuffle=self.test_shuffle, num_workers=self.num_workers)
