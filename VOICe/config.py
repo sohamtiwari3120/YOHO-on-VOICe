@@ -120,10 +120,10 @@ initialize_layer: bool = True
 
 # PyTorch Dataloader
 train_shuffle = True
-val_shuffle = True
+val_shuffle = False
 test_shuffle = False
 
 # PyTorch VOICe Dataset
-train_spec_transform = True
+train_spec_transform = False
 val_spec_transform = False
 test_spec_transform = False

@@ -445,18 +445,22 @@ class VOICeDataset(Dataset):
 
     def __getitem__(self, idx):
         # to convert (H, W) -> (C, H, W)
-        X = np.load(self.logmel_npy[idx])[None, :]
-        # (channels=1, height, width)
-        y = np.load(self.label_npy[idx])
-
-        if self.spec_transform and self.mode == 'training':
-            X = spec_augment_pytorch.spec_augment(torch.tensor(X), time_warping_para=time_warping_para, frequency_masking_para=frequency_masking_para,
-                                                  time_masking_para=time_masking_para, frequency_mask_num=frequency_mask_num, time_mask_num=time_mask_num)
-        if isinstance(X, torch.Tensor):
-            X = X.float()
-        elif isinstance(X, np.ndarray):
-            X = X.astype(float)
-        return X, y
+        try:
+            X = np.load(self.logmel_npy[idx])[None, :]
+            # (channels=1, height, width)
+            y = np.load(self.label_npy[idx])
+    
+            if self.spec_transform and self.mode == 'training':
+                X = spec_augment_pytorch.spec_augment(torch.tensor(X), time_warping_para=time_warping_para, frequency_masking_para=frequency_masking_para,
+                                                      time_masking_para=time_masking_para, frequency_mask_num=frequency_mask_num, time_mask_num=time_mask_num)
+            if isinstance(X, torch.Tensor):
+                X = X.float()
+            elif isinstance(X, np.ndarray):
+                X = X.astype(float)
+            return X, y
+        except Exception as e:
+            print(f'Trying to load {self.logmel_npy[idx]}')
+            raise Exception(f'{e} - Trying to load {self.logmel_npy[idx]}')
 
 
 class VOICeDataModule(pl.LightningDataModule):
