@@ -12,6 +12,7 @@ from config import learning_rate, num_classes, input_height, input_width, depthw
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse, my_loss_fn
 from models.kervolution_pytorch import KernelConv2d, LinearKernel, PolynomialKernel, GaussianKernel
 
+
 def init_layer(layer):
     """Initialize a Linear or Convolutional layer. """
     nn.init.xavier_uniform_(layer.weight)
@@ -39,21 +40,28 @@ class InitializedConv1d(nn.Conv1d):
             init_layer(self)
 
 
-class InitializedConv2d(KernelConv2d):
-    """Conv2d layer initalized using init_layer
+class InitializedKerv2d(KernelConv2d):
+    """Kervolutional 2D layer initalized using init_layer
     """
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=None, padding_mode='zeros', kernel_fn=LinearKernel, *args: Any, **kwargs: Any):
-        super().__init__(in_channels, out_channels, kernel_size, kernel_fn, stride, padding, dilation, groups, bias, padding_mode, *args, **kwargs)
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=None, padding_mode='zeros', initialize_layer=initialize_layer, kernel_fn=LinearKernel, *args: Any, **kwargs: Any):
+        super().__init__(in_channels, out_channels, kernel_size, kernel_fn, stride,
+                         padding, dilation, groups, bias, padding_mode, *args, **kwargs)
         self.initialize_layer = initialize_layer
         if(self.initialize_layer):
             init_layer(self)
 
-    # def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=initialize_layer) -> None:
-    #     super().__init__(in_channels, out_channels, kernel_size, stride,
-    #                      padding, dilation, groups, bias, padding_mode, device, dtype)
-    #     self.initialize_layer = initialize_layer
-    #     if(self.initialize_layer):
-    #         init_layer(self)
+
+class InitializedConv2d(nn.Conv2d):
+    """Conv2d layer initalized using init_layer
+    """
+
+    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=True) -> None:
+        super().__init__(in_channels, out_channels, kernel_size, stride,
+                         padding, dilation, groups, bias, padding_mode, device, dtype)
+        self.initialize_layer = initialize_layer
+        if(self.initialize_layer):
+            init_layer(self)
 
 
 class InitializedBatchNorm2d(nn.BatchNorm2d):
@@ -87,7 +95,7 @@ class Yoho(nn.Module):
         output_height = self.input_height
 
         self.block_first = nn.Sequential(
-            InitializedConv2d(1, 32, (3, 3), stride=2, bias=False),
+            InitializedKerv2d(1, 32, (3, 3), stride=2, bias=False),
             InitializedBatchNorm2d(32, eps=1e-4),
             nn.ReLU()
         )
@@ -126,11 +134,11 @@ class Yoho(nn.Module):
                 (padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1]))
             self.blocks_depthwise.append(
                 nn.Sequential(
-                    InitializedConv2d(input_channels, input_channels, kernel_size, stride=stride,
+                    InitializedKerv2d(input_channels, input_channels, kernel_size, stride=stride,
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     nn.ReLU(),
-                    InitializedConv2d(input_channels, output_channels,
+                    InitializedKerv2d(input_channels, output_channels,
                                       (1, 1), 1, 'same', bias=False),  # step 2
                     InitializedBatchNorm2d(output_channels, eps=1e-4),
                     nn.ReLU(),
