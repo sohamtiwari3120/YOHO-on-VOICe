@@ -8,10 +8,10 @@ logger.add('process_dataset.log', rotation='500 KB')
 @logger.catch
 def main(args):
     logger.info(f'Starting processing of entire dataset for {snr} audio.')
-    logger.info(f'First converting all audios to mono.')
-    if args.convert_to_mono:
+    if not args.skip_mono_conversion:
+        logger.info(f'First converting all audios to mono.')
         convert_to_mono()
-    logger.info(f'Finished conversion to mono audio.')
+        logger.info(f'Finished conversion to mono audio.')
     for mode in args.data_modes:
         for env in args.envs:
             logger.info(f'Processing {mode}, {env} data.')
@@ -24,7 +24,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Program to process dataset by converting to mono audios and then generating and saving spectrograms.')
-    parser.add_argument('-ctm', '--convert_to_mono', type=bool, default=True)
+    parser.add_argument('-smc', '--skip_mono_conversion', action='store_true')
     parser.add_argument('-dms', '--data_modes', nargs='+', default=data_modes)
     parser.add_argument('-es', '--envs', nargs='+', default=envs)
     args = parser.parse_args()
