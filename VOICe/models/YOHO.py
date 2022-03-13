@@ -10,7 +10,7 @@ from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, adam_eps, initialize_layer, monitor, loss_function_str
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse, my_loss_fn
-from kervolution_pytorch import KernelConv2d, LinearKernel, PolynomialKernel, GaussianKernel
+from models.kervolution_pytorch import KernelConv2d, LinearKernel, PolynomialKernel, GaussianKernel
 
 def init_layer(layer):
     """Initialize a Linear or Convolutional layer. """
@@ -42,7 +42,7 @@ class InitializedConv1d(nn.Conv1d):
 class InitializedConv2d(KernelConv2d):
     """Conv2d layer initalized using init_layer
     """
-    def __init__(self, in_channels, out_channels, kernel_size, kernel_fn=LinearKernel(), stride=1, padding=0, dilation=1, groups=1, bias=None, padding_mode='zeros', *args: Any, **kwargs: Any):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=None, padding_mode='zeros', kernel_fn=LinearKernel, *args: Any, **kwargs: Any):
         super().__init__(in_channels, out_channels, kernel_size, kernel_fn, stride, padding, dilation, groups, bias, padding_mode, *args, **kwargs)
         self.initialize_layer = initialize_layer
         if(self.initialize_layer):
@@ -127,7 +127,7 @@ class Yoho(nn.Module):
             self.blocks_depthwise.append(
                 nn.Sequential(
                     InitializedConv2d(input_channels, input_channels, kernel_size, stride=stride,
-                                      padding='valid', groups=input_channels, bias=False),  # step 1
+                                      padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     nn.ReLU(),
                     InitializedConv2d(input_channels, output_channels,
