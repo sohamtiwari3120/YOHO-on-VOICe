@@ -95,7 +95,7 @@ class Yoho(nn.Module):
         output_height = self.input_height
 
         self.block_first = nn.Sequential(
-            InitializedKerv2d(1, 32, (3, 3), stride=2, bias=False),
+            InitializedConv2d(1, 32, (3, 3), stride=2, bias=False),
             InitializedBatchNorm2d(32, eps=1e-4),
             nn.ReLU()
         )
@@ -134,11 +134,11 @@ class Yoho(nn.Module):
                 (padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1]))
             self.blocks_depthwise.append(
                 nn.Sequential(
-                    InitializedKerv2d(input_channels, input_channels, kernel_size, stride=stride,
+                    InitializedConv2d(input_channels, input_channels, kernel_size, stride=stride,
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     nn.ReLU(),
-                    InitializedKerv2d(input_channels, output_channels,
+                    InitializedConv2d(input_channels, output_channels,
                                       (1, 1), 1, 'same', bias=False),  # step 2
                     InitializedBatchNorm2d(output_channels, eps=1e-4),
                     nn.ReLU(),
