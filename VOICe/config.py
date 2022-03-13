@@ -62,6 +62,9 @@ source_env = 'indoor'
 target_env = 'vehicle'
 data_mode = 'test'
 
+# kervolutional
+kernel_modes = ['linear', 'polynomial', 'gaussian']
+
 # TENSORFLOW
 # tensorflow regularizers
 l2_kernel_reg_first_conv2d = 1e-3

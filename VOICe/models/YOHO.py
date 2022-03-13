@@ -10,7 +10,7 @@ from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, adam_eps, initialize_layer, monitor, loss_function_str
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse, my_loss_fn
-
+from kervolution_pytorch import KernelConv2d, LinearKernel, PolynomialKernel, GaussianKernel
 
 def init_layer(layer):
     """Initialize a Linear or Convolutional layer. """
@@ -31,7 +31,7 @@ class InitializedConv1d(nn.Conv1d):
     """Conv1d layer initalized using init_layer
     """
 
-    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=True) -> None:
+    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=initialize_layer) -> None:
         super().__init__(in_channels, out_channels, kernel_size, stride,
                          padding, dilation, groups, bias, padding_mode, device, dtype)
         self.initialize_layer = initialize_layer
@@ -39,16 +39,21 @@ class InitializedConv1d(nn.Conv1d):
             init_layer(self)
 
 
-class InitializedConv2d(nn.Conv2d):
+class InitializedConv2d(KernelConv2d):
     """Conv2d layer initalized using init_layer
     """
-
-    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=True) -> None:
-        super().__init__(in_channels, out_channels, kernel_size, stride,
-                         padding, dilation, groups, bias, padding_mode, device, dtype)
+    def __init__(self, in_channels, out_channels, kernel_size, kernel_fn=LinearKernel(), stride=1, padding=0, dilation=1, groups=1, bias=None, padding_mode='zeros', *args: Any, **kwargs: Any):
+        super().__init__(in_channels, out_channels, kernel_size, kernel_fn, stride, padding, dilation, groups, bias, padding_mode, *args, **kwargs)
         self.initialize_layer = initialize_layer
         if(self.initialize_layer):
             init_layer(self)
+
+    # def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=initialize_layer) -> None:
+    #     super().__init__(in_channels, out_channels, kernel_size, stride,
+    #                      padding, dilation, groups, bias, padding_mode, device, dtype)
+    #     self.initialize_layer = initialize_layer
+    #     if(self.initialize_layer):
+    #         init_layer(self)
 
 
 class InitializedBatchNorm2d(nn.BatchNorm2d):
