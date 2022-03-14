@@ -11,7 +11,7 @@ from utils.types import depthwise_layers_type
 from config import learning_rate, num_classes, input_height, input_width, depthwise_layers, mode, patience, factor, adam_eps, initialize_layer, monitor, loss_function_str
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse, my_loss_fn
 from models.kervolution_pytorch import KernelConv2d, LinearKernel, PolynomialKernel, GaussianKernel
-
+from functools import partial
 
 def init_layer(layer):
     """Initialize a Linear or Convolutional layer. """
@@ -95,7 +95,7 @@ class Yoho(nn.Module):
         output_height = self.input_height
 
         self.block_first = nn.Sequential(
-            InitializedConv2d(1, 32, (3, 3), stride=2, bias=False),
+            InitializedKerv2d(1, 32, (3, 3), stride=2, bias=False),
             InitializedBatchNorm2d(32, eps=1e-4),
             nn.ReLU()
         )
@@ -138,8 +138,8 @@ class Yoho(nn.Module):
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     nn.ReLU(),
-                    InitializedConv2d(input_channels, output_channels,
-                                      (1, 1), 1, 'same', bias=False),  # step 2
+                    InitializedKerv2d(input_channels, output_channels,
+                                      (1, 1), 1, padding=0, bias=False),  # step 2
                     InitializedBatchNorm2d(output_channels, eps=1e-4),
                     nn.ReLU(),
                     nn.Dropout2d(0.1)
