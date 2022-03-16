@@ -94,11 +94,12 @@ class YohoConvNeXt(nn.Module):
         self.head = nn.Sequential(
             nn.Linear(1000, 512),
             nn.Linear(512, 256),
-            nn.Linear(512, self.num_classes)
+            nn.Linear(256, 3*self.num_classes)
         )
 
     def forward(self, input):
         x = self.convnext(input)
+        print(x.shape)
         x = self.head(x)
         return x
 
