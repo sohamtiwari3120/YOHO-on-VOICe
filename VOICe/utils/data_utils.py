@@ -11,7 +11,7 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 from subprocess import Popen, PIPE
-from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers, rev_class_dict, max_consecutive_event_silence, train_shuffle, val_shuffle, test_shuffle, train_spec_transform, val_spec_transform, test_spec_transform
+from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers, rev_class_dict, max_consecutive_event_silence, train_shuffle, val_shuffle, test_shuffle, train_spec_transform, val_spec_transform, test_spec_transform, save_logmelspec, save_labels
 from tqdm import tqdm
 from utils.types import file_paths_type
 from utils.SpecAugment import spec_augment_pytorch
@@ -358,12 +358,13 @@ def process_audio_file(audio_path):
     return audio_wins, window_ranges, all_anns, all_model_compatible_anns
 
 
-def get_logmel_label_paths(mode, env):
+def get_logmel_label_paths(mode, env, num_subwindows: int = num_subwindows):
     """A function to simply return folder dirpaths where logmelspectrogram and label npy files will be stores.
 
     Args:
         mode (str): Either one of ['training', 'test', 'validation']
         env (str): Either one of ['vehicle', 'outdoor', 'indoor']
+        num_subwindows (int): Number of subwindows in model compatible anns.
 
     Returns:
         str: Folder directory where logmelspec npy files will be stored
@@ -374,11 +375,12 @@ def get_logmel_label_paths(mode, env):
     folder_path = os.path.join(
         base_dir, f'{snr}-mono', f'{mode}-data', env)
     logmel_path = os.path.join(folder_path, 'logmels_npy')
-    label_path = os.path.join(folder_path, 'labels_npy')
+    label_path = os.path.join(
+        folder_path, 'labels_npy', f'num_subwindows={num_subwindows}')
     return logmel_path, label_path
 
 
-def save_logmelspec_and_labels(mode, env, audio_windows, labels, snr=snr):
+def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec: bool = save_logmelspec, save_labels: bool = save_labels):
     """To save the generated logmelspecs and compatible annotations in npy format.
 
     Args:
@@ -386,7 +388,8 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, snr=snr):
         env (str): Environment of data.
         audio_windows (List[numpy.array]): audio windows returned from generate_windows_and_anns function.
         labels (List[numpy.array]): model compatible annotations/labels returned from generate_windows_and_anns function.
-        snr (str, optional): Audio snr level. Defaults to snr.
+        save_logmelspec (bool, optional): Whether to generate and save logmelspec for audiowindows. Defaults to save_logmelspec.
+        save_labels (bool, optional): Whether to save model compatible anns. Defaults to save_labels.
 
     Raises:
         Exception: If invalid environment type chosen.
@@ -402,9 +405,12 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, snr=snr):
     os.makedirs(label_path, exist_ok=True)
 
     for i, (audio_win, label) in enumerate(zip(audio_windows, labels)):
-        logmelspec = get_log_melspectrogram(audio_win).T
-        np.save(os.path.join(logmel_path, f'logmelspec-{i}.npy'), logmelspec)
-        np.save(os.path.join(label_path, f'label-{i}.npy'), label)
+        if save_logmelspec:
+            logmelspec = get_log_melspectrogram(audio_win).T
+            np.save(os.path.join(logmel_path,
+                    f'logmelspec-{i}.npy'), logmelspec)
+        if save_labels:
+            np.save(os.path.join(label_path, f'label-{i}.npy'), label)
 
     return logmel_path, label_path
 
@@ -449,7 +455,7 @@ class VOICeDataset(Dataset):
             X = np.load(self.logmel_npy[idx])[None, :]
             # (channels=1, height, width)
             y = np.load(self.label_npy[idx])
-    
+
             if self.spec_transform and self.mode == 'training':
                 X = spec_augment_pytorch.spec_augment(torch.tensor(X), time_warping_para=time_warping_para, frequency_masking_para=frequency_masking_para,
                                                       time_masking_para=time_masking_para, frequency_mask_num=frequency_mask_num, time_mask_num=time_mask_num)
@@ -467,7 +473,7 @@ class VOICeDataModule(pl.LightningDataModule):
     """PyTorch-Lightning data module for VOICe dataset.
     """
 
-    def __init__(self, env: str, batch_size:int =batch_size, train_shuffle: bool = train_shuffle, val_shuffle: bool = val_shuffle, test_shuffle: bool = test_shuffle, train_spec_transform: bool = train_spec_transform, val_spec_transform: bool = val_spec_transform, test_spec_transform: bool = test_spec_transform, num_workers: int = num_workers):
+    def __init__(self, env: str, batch_size: int = batch_size, train_shuffle: bool = train_shuffle, val_shuffle: bool = val_shuffle, test_shuffle: bool = test_shuffle, train_spec_transform: bool = train_spec_transform, val_spec_transform: bool = val_spec_transform, test_spec_transform: bool = test_spec_transform, num_workers: int = num_workers):
         """PyTorch Lightning Custom LightninDataModule for VOICe Dataset
 
         Args:
@@ -483,7 +489,7 @@ class VOICeDataModule(pl.LightningDataModule):
 
         Raises:
             Exception: Invalid environment type. Should be one of  ['vehicle', 'outdoor', 'indoor'].
-        """     
+        """
         super().__init__()
         if env not in envs:
             raise Exception('Invalid environment type.')

@@ -1,13 +1,15 @@
 import argparse
-from models.YOHO import YohoLM
+from models.YOHO import Yoho
 from models.YOHO_tf import YohoTF
+from models.VOICeConvNeXt import VOICeConvNeXt
 from utils.data_utils import VOICeDataModule
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor
 from utils.torch_utils import MonitorSedF1Callback
 from utils.tf_utils import DataGenerator, my_loss_fn
+from utils.pl_utils import LM
 from loguru import logger
-from config import env, devices, accelerator, gradient_clip_val, input_height, input_width, backend, backends
+from config import env, devices, accelerator, gradient_clip_val, input_height, input_width, backend, backends, model_name, models
 from torchsummary import summary
 import torch
 
@@ -19,10 +21,10 @@ def pytorch(args):
     logger.info(f'Starting training of model for {env} audio.')
     
     if args.chkpt_path is not None:
-        model = YohoLM.load_from_checkpoint(args.chkpt_path)
+        model = LM.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
-        model = YohoLM()
+        model = LM(eval(args.model_name)())
         logger.info(f'Starting a fresh model.')
 
     if args.model_summary:
@@ -79,6 +81,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='For making realtime predictons.')
     parser.add_argument('-b', '--backend', type=str, default=backend, choices=backends)
+    parser.add_argument('-m', '--model_name', type=str, default=model_name, choices=models)
     parser.add_argument('-e', '--env', type=str, default=env)
     parser.add_argument('-cp', '--chkpt_path', type=str, default=None)
     parser.add_argument('-alr', '--auto_lr', type=bool, default=False)

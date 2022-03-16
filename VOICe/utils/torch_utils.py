@@ -1,13 +1,14 @@
-from tkinter.tix import Tree
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 import os
 import numpy as np
 import torch
-from config import num_classes, window_len_secs, num_classes, num_subwindows, rev_class_dict, backends, snr
+from torch import nn
+from config import num_classes, window_len_secs, num_classes, num_subwindows, rev_class_dict, backends, snr, initialize_layer, model_name
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 from utils.evaluate_utils import compute_sed_f1_errorrate
 from utils.data_utils import file_paths, construct_audio_windows, convert_path_to_mono, get_log_melspectrogram, merge_sound_events
+from models.kervolution_pytorch import KernelConv2d, LinearKernel, PolynomialKernel, GaussianKernel
 
 
 def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:
@@ -225,11 +226,12 @@ class MonitorSedF1Callback(Callback):
         Callback (pytorch_lightning.callbacks.Callback): PyTorch Lightning Callback base class
     """
 
-    def __init__(self, env):
+    def __init__(self, env, model_name: str = model_name):
         super(MonitorSedF1Callback, self).__init__()
         self.best_f1 = 0.0
         self.best_error = np.inf
         self.env = env
+        self.model_name = model_name
         self.model_ckpt_folder_path = os.path.join(os.path.dirname(
             os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', backends[0])
         os.makedirs(self.model_ckpt_folder_path, exist_ok=True)
@@ -247,15 +249,78 @@ class MonitorSedF1Callback(Callback):
             if curr_f1 > self.best_f1:
                 self.best_f1 = curr_f1
                 trainer.save_checkpoint(os.path.join(
-                    self.model_ckpt_folder_path, f"model-{self.env}-best-f1.ckpt"))
+                    self.model_ckpt_folder_path, f"model-{self.model_name}-{self.env}-best-f1.ckpt"))
 
             if curr_error < self.best_error:
                 self.best_error = curr_error
                 trainer.save_checkpoint(os.path.join(
-                    self.model_ckpt_folder_path, f"model-{self.env}-best-error.ckpt"))
+                    self.model_ckpt_folder_path, f"model-{self.model_name}-{self.env}-best-error.ckpt"))
 
             print("F-measure: {:.3f} vs {:.3f}".format(curr_f1, self.best_f1))
             print("Error rate: {:.3f} vs {:.3f}".format(
                 curr_error, self.best_error))
 
             # Or print all metrics as reports
+
+
+def init_layer(layer):
+    """Initialize a Linear or Convolutional layer. """
+    nn.init.xavier_uniform_(layer.weight)
+
+    if hasattr(layer, 'bias'):
+        if layer.bias is not None:
+            layer.bias.data.fill_(0.)
+
+
+def init_bn(bn):
+    """Initialize a Batchnorm layer. """
+    bn.bias.data.fill_(0.)
+    bn.weight.data.fill_(1.)
+
+
+class InitializedConv1d(nn.Conv1d):
+    """Conv1d layer initalized using init_layer
+    """
+
+    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=initialize_layer) -> None:
+        super().__init__(in_channels, out_channels, kernel_size, stride,
+                         padding, dilation, groups, bias, padding_mode, device, dtype)
+        self.initialize_layer = initialize_layer
+        if(self.initialize_layer):
+            init_layer(self)
+
+
+class InitializedKerv2d(KernelConv2d):
+    """Kervolutional 2D layer initalized using init_layer
+    """
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=None, padding_mode='zeros', initialize_layer=initialize_layer, kernel_fn=LinearKernel, *args: Any, **kwargs: Any):
+        super().__init__(in_channels, out_channels, kernel_size, kernel_fn, stride,
+                         padding, dilation, groups, bias, padding_mode, *args, **kwargs)
+        self.initialize_layer = initialize_layer
+        if(self.initialize_layer):
+            init_layer(self)
+
+
+class InitializedConv2d(nn.Conv2d):
+    """Conv2d layer initalized using init_layer
+    """
+
+    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=True) -> None:
+        super().__init__(in_channels, out_channels, kernel_size, stride,
+                         padding, dilation, groups, bias, padding_mode, device, dtype)
+        self.initialize_layer = initialize_layer
+        if(self.initialize_layer):
+            init_layer(self)
+
+
+class InitializedBatchNorm2d(nn.BatchNorm2d):
+    """BatchNorm2d layer initalized using init_bn
+    """
+
+    def __init__(self, num_features, eps=0.00001, momentum=0.1, affine=True, track_running_stats=True, device=None, dtype=None, initialize_layer=initialize_layer):
+        super().__init__(num_features, eps, momentum,
+                         affine, track_running_stats, device, dtype)
+        self.initialize_layer = initialize_layer
+        if(self.initialize_layer):
+            init_bn(self)

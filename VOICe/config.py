@@ -13,7 +13,11 @@ sample_rate = 44100
 window_len_secs = 2.56
 hop_len_secs = 1.96
 max_consecutive_event_silence = 0.3
-num_subwindows = 9
+num_subwindows = 1
+
+# process_dataset
+save_logmelspec: bool = True
+save_labels: bool = True
 
 # dataset melspec
 mel_hop_len = 441
@@ -28,8 +32,10 @@ env = 'indoor'
 learning_rate = 1e-3
 batch_size = 16
 # note, we are saving transpose of the logmelspecs
-input_height = 257 # hence 257 is actually the length of the time dimension before transpose
-input_width = 40 # hence 40 is actually the length of the frequency dimension (n_mels) before transpose
+# hence 257 is actually the length of the time dimension before transpose
+input_height = 257
+# hence 40 is actually the length of the frequency dimension (n_mels) before transpose
+input_width = 40
 num_workers = 8
 
 depthwise_layers = [
@@ -57,6 +63,9 @@ depthwise_layers = [
 backends = ['pytorch', 'tensor_flow']
 backend = backends[0]
 
+models = ['Yoho', 'VOICeConvNeXt']
+model_name = models[0]
+
 # evaluate
 source_env = 'indoor'
 target_env = 'vehicle'
@@ -81,35 +90,35 @@ batch_norm_eps = 1e-4
 # tensorflow spatial dropout
 spatial_dropout = 0.1
 
-# tensorflow epochs 
+# tensorflow epochs
 epochs = 1000
 
 # tensorflow model.fit verbose
 fit_verbose = 1
 
 # tensorflow earlystopping callback
-min_delta=0.1
-tf_patience=5
-tf_monitor='val_loss'
+min_delta = 0.1
+tf_patience = 5
+tf_monitor = 'val_loss'
 
 # PYTORCH
 # Pytorch SpecAugment
-time_warping_para=5
-frequency_masking_para=10
-time_masking_para=5
-frequency_mask_num=2
-time_mask_num=1
+time_warping_para = 5
+frequency_masking_para = 10
+time_masking_para = 5
+frequency_mask_num = 2
+time_mask_num = 1
 
 # Pytorch ReduceLRonPlateau
 mode = 'min'
 patience = 5
 factor = 0.5
-monitor='validation_loss'
+monitor = 'validation_loss'
 
 # PL trainer params
-devices="auto"
-accelerator="auto"
-gradient_clip_val=0.5
+devices = "auto"
+accelerator = "auto"
+gradient_clip_val = 0.5
 loss_function_str: str = 'weighted_mse'
 
 # Adam Optimiser

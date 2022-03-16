@@ -1,5 +1,4 @@
 import argparse
-from models.YOHO import YohoLM
 from loguru import logger
 import numpy as np
 import os
@@ -7,6 +6,7 @@ from config import source_env, target_env, data_mode, backend, backends, snr
 from utils.torch_utils import generate_save_predictions
 from utils.evaluate_utils import compute_sed_f1_errorrate
 from utils.data_utils import data_modes
+from utils.pl_utils import LM
 
 
 @logger.catch
@@ -26,7 +26,7 @@ def evaluate(args):
                               f"model-{source_env}-best-f1.ckpt")
     if not os.path.exists:
         raise Exception(f'Not found: {chkpt_path}.')
-    model = YohoLM.load_from_checkpoint(chkpt_path)
+    model = LM.load_from_checkpoint(chkpt_path)
     logger.info(f'Loaded model checkpoint: {chkpt_path}')
     reference_files, estimated_files = generate_save_predictions(
         model, data_mode, target_env)
