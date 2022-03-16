@@ -6,6 +6,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning.core.lightning import LightningModule
 from typing import Any
 from config import learning_rate, mode, patience, factor, adam_eps, monitor, loss_function_str
+from utils.torch_utils import weighted_mse, mse, my_loss_fn
 
 class LM(LightningModule):
     """PyTorch (Lightning) Module for YOHO algorithm
