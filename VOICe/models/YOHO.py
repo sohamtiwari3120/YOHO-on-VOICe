@@ -12,6 +12,7 @@ from config import learning_rate, num_classes, input_height, input_width, depthw
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, mse, weighted_mse, my_loss_fn
 from models.kervolution_pytorch import KernelConv2d, LinearKernel, PolynomialKernel, GaussianKernel
 from functools import partial
+from models.convnext import convnext_tiny
 
 def init_layer(layer):
     """Initialize a Linear or Convolutional layer. """
@@ -75,6 +76,31 @@ class InitializedBatchNorm2d(nn.BatchNorm2d):
         if(self.initialize_layer):
             init_bn(self)
 
+class YohoConvNeXt(nn.Module):
+    """ConvNeXt Model with output linear layer
+    """
+
+    def __init__(self,
+                 num_classes: int = num_classes,
+                 input_height: int = input_height, input_width: int = input_width,
+                 *args: Any, **kwargs: Any) -> None:
+
+        super(YohoConvNeXt, self).__init__(*args, **kwargs)
+        self.num_classes = num_classes
+        self.input_height = input_height
+        self.input_width = input_width
+        self.convnext = convnext_tiny(True)
+        # output shape
+        self.head = nn.Sequential(
+            nn.Linear(1000, 512),
+            nn.Linear(512, 256),
+            nn.Linear(512, self.num_classes)
+        )
+
+    def forward(self, input):
+        x = self.convnext(input)
+        x = self.head(x)
+        return x
 
 class Yoho(nn.Module):
     """PyTorch Model for Yoho Algorithm

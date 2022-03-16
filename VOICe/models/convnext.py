@@ -11,7 +11,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.layers import trunc_normal_, DropPath
 from timm.models.registry import register_model
-from torchsummary import summary
 
 class Block(nn.Module):
     r""" ConvNeXt Block. There are two equivalent implementations:
@@ -226,7 +225,3 @@ def convnext_xlarge(pretrained=False, in_22k=False, **kwargs):
             url=url, map_location="cpu")
         model.load_state_dict(checkpoint["model"])
     return model
-
-if __name__ == '__main__':
-    model = convnext_tiny(True)
-    summary(model, (16, 1, 257, 40))
