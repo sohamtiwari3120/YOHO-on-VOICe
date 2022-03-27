@@ -20,7 +20,7 @@ def pytorch(args):
     env = args.env
     expt_name = args.expt_name
     expt_folder = os.path.join(os.path.dirname(__file__),
-                               'model_checkpoints', f'{snr}_mono', f'{args.backend}', expt_name)
+                               'model_checkpoints', f'{snr}-mono', f'{args.backend}', expt_name)
     if not os.path.exists(expt_folder):
         os.makedirs(expt_folder)
     
@@ -69,7 +69,7 @@ def tensor_flow(args):
     env = args.env
     expt_name = args.expt_name
     expt_folder = os.path.join(os.path.dirname(__file__),
-                               'model_checkpoints', f'{snr}_mono', f'{args.backend}', expt_name)
+                               'model_checkpoints', f'{snr}-mono', f'{args.backend}', expt_name)
     if not os.path.exists(expt_folder):
         os.makedirs(expt_folder)
     
