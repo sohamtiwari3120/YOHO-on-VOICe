@@ -219,6 +219,7 @@ def generate_save_predictions(model, data_mode, env):
                 x[1], 5), x[2]) for x in unified_sound_events))
     return reference_files, estimated_files
 
+
 class MonitorSedF1Callback(Callback):
     """PyTorch Lightning Callback for monitoring f1 scores for sed task and storing model weights for best f1 scores and best error rates.
 
@@ -226,21 +227,21 @@ class MonitorSedF1Callback(Callback):
         Callback (pytorch_lightning.callbacks.Callback): PyTorch Lightning Callback base class
     """
 
-    def __init__(self, env, model_name: str = model_name):
+    def __init__(self, env: str, expt_folder: str, model_name: str = model_name):
         super(MonitorSedF1Callback, self).__init__()
         self.best_f1 = 0.0
         self.best_error = np.inf
         self.env = env
         self.model_name = model_name
-        self.model_ckpt_folder_path = os.path.join(os.path.dirname(
-            os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', backends[0])
+        self.model_ckpt_folder_path = expt_folder
         os.makedirs(self.model_ckpt_folder_path, exist_ok=True)
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         epoch = trainer.current_epoch
 
         if epoch > 1:
-            reference_files, estimated_files = generate_save_predictions(pl_module, 'validation', self.env)
+            reference_files, estimated_files = generate_save_predictions(
+                pl_module, 'validation', self.env)
             curr_f1, curr_error = compute_sed_f1_errorrate(
                 reference_files, estimated_files)
             self.log('f1', curr_f1)

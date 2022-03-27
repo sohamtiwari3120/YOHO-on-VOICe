@@ -22,7 +22,9 @@ class VOICeConvNeXt(nn.Module):
         # output shape
         self.head = nn.Sequential(
             nn.Linear(1000, 512),
+            nn.GELU(),
             nn.Linear(512, 256),
+            nn.GELU(),
             nn.Linear(256, 3*self.num_classes)
         )
 

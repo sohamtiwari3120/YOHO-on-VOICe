@@ -62,13 +62,12 @@ class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
         Callback (tf.keras.callbacks.Callback): Tensorflow Callback base class
     """
 
-    def __init__(self, env):
+    def __init__(self, env, model_ckpt_folder_path):
         super(MonitorSedF1CallbackTf, self).__init__()
         self.best_f1 = 0.0
         self.best_error = np.inf
         self.env = env
-        self.model_ckpt_folder_path = os.path.join(os.path.dirname(
-            os.path.dirname(__file__)), 'model_checkpoints', f'{snr}-mono', backends[1])
+        self.model_ckpt_folder_path = model_ckpt_folder_path
         os.makedirs(self.model_ckpt_folder_path, exist_ok=True)
 
     def on_epoch_end(self, epoch, logs=None) -> None:

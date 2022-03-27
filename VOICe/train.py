@@ -9,17 +9,26 @@ from utils.torch_utils import MonitorSedF1Callback
 from utils.tf_utils import DataGenerator, my_loss_fn
 from utils.pl_utils import LM
 from loguru import logger
-from config import env, devices, accelerator, gradient_clip_val, input_height, input_width, backend, backends, model_name, models
+from config import env, devices, accelerator, gradient_clip_val, input_height, input_width, backend, backends, model_name, models, snr
 from torchsummary import summary
 import torch
+import os
+
 
 @logger.catch
 def pytorch(args):
     env = args.env
-    logger.add(f'Using {args.backend} backend')
-    logger.add(f'{args.backend}_train_{env}.log', rotation='500 KB')
-    logger.info(f'Starting training of model for {env} audio.')
+    expt_name = args.expt_name
+    expt_folder = os.path.join(os.path.dirname(__file__),
+                               'model_checkpoints', f'{snr}_mono', f'{args.backend}', expt_name)
+    if not os.path.exists(expt_folder):
+        os.makedirs(expt_folder)
     
+    logger.add(os.path.join(
+        expt_folder, f'{args.backend}_train_{env}.log'))
+    logger.info(f'Using {args.backend} backend')
+    logger.info(f'{expt_name}: Starting training of model for {env} audio.')
+
     if args.chkpt_path is not None:
         model = LM.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
@@ -32,15 +41,15 @@ def pytorch(args):
         summary(model.to(device), (1, input_height, input_width))
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
-    trainer = Trainer(callbacks=[MonitorSedF1Callback(env), lr_monitor], devices=devices, accelerator=accelerator, gradient_clip_val=gradient_clip_val)
+    trainer = Trainer(callbacks=[MonitorSedF1Callback(
+        env, expt_folder), lr_monitor], devices=devices, accelerator=accelerator, gradient_clip_val=gradient_clip_val)
     voice_dm = VOICeDataModule(env)
 
     if args.auto_lr:
         logger.info(f'Starting auto lr find of model for {env} audio.')
         lr_finder = trainer.tuner.lr_find(model, voice_dm)
         logger.info(f'Finished auto lr find of model for {env} audio.')
-        # Results can be found in
-        lr_finder.results
+        # Results can be found in lr_finder.results
         # Plot with
         fig = lr_finder.plot(suggest=True)
         fig.savefig('lr_finder.plot.png')
@@ -49,18 +58,26 @@ def pytorch(args):
         logger.info(f'new_lr = {new_lr}')
         # update hparams of the model
         model.learning_rate = new_lr
-        
+
     # Fit model
     trainer.fit(model, voice_dm)
     logger.info(f'Finished training of model for {env} audio.')
 
+
 @logger.catch
 def tensor_flow(args):
     env = args.env
-    logger.add(f'Using {args.backend} backend')
-    logger.add(f'{args.backend}_train_{env}.log', rotation='500 KB')
-    logger.info(f'Starting training of model for {env} audio.')
-    model = YohoTF()
+    expt_name = args.expt_name
+    expt_folder = os.path.join(os.path.dirname(__file__),
+                               'model_checkpoints', f'{snr}_mono', f'{args.backend}', expt_name)
+    if not os.path.exists(expt_folder):
+        os.makedirs(expt_folder)
+    
+    logger.add(os.path.join(
+        expt_folder, f'{args.backend}_train_{env}.log'))
+    logger.info(f'Using {args.backend} backend')
+    logger.info(f'{expt_name}: Starting training of model for {env} audio.')
+    model = YohoTF(expt_folder, env)
     if args.chkpt_path is not None:
         model.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
@@ -70,8 +87,9 @@ def tensor_flow(args):
         model.summary()
 
     train_data = DataGenerator('training', env, spec_transform=True)
-    validation_data = DataGenerator('validation', env, spec_transform=False, shuffle=False)
-        
+    validation_data = DataGenerator(
+        'validation', env, spec_transform=False, shuffle=False)
+
     # Fit model
     model.train_and_validate(train_data, validation_data, my_loss_fn)
     logger.info(f'Finished training of model for {env} audio.')
@@ -80,8 +98,11 @@ def tensor_flow(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='For making realtime predictons.')
-    parser.add_argument('-b', '--backend', type=str, default=backend, choices=backends)
-    parser.add_argument('-m', '--model_name', type=str, default=model_name, choices=models)
+    parser.add_argument('-en', '--expt_name', type=str, required=True)
+    parser.add_argument('-b', '--backend', type=str,
+                        default=backend, choices=backends)
+    parser.add_argument('-m', '--model_name', type=str,
+                        default=model_name, choices=models)
     parser.add_argument('-e', '--env', type=str, default=env)
     parser.add_argument('-cp', '--chkpt_path', type=str, default=None)
     parser.add_argument('-alr', '--auto_lr', type=bool, default=False)
