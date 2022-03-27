@@ -36,7 +36,7 @@ class hparams:
     # hence 257 is actually the length of the time dimension before transpose
     input_height = 257
     # hence 40 is actually the length of the frequency dimension (n_mels) before transpose
-    input_width = 40
+    input_width = n_mels
     num_workers = 8
 
     depthwise_layers = [
