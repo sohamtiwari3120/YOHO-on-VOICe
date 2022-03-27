@@ -64,7 +64,7 @@ class hparams:
     backends = ['pytorch', 'tensor_flow']
     backend = backends[0]
 
-    models = ['Yoho', 'VOICeConvNeXt']
+    models = ['Yoho', 'VOICeConvNeXt', 'VOICePANN']
     model_name = models[0]
 
     # evaluate
@@ -137,3 +137,6 @@ class hparams:
     train_spec_transform = False
     val_spec_transform = False
     test_spec_transform = False
+
+    # PANN
+    pann_encoder_ckpt_path = f'/notebooks/YOHO/YOHO-on-VOICe/VOICe/modelsmodels/Cnn10_mAP0.380.pth'

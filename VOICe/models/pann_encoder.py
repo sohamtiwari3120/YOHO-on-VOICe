@@ -1,8 +1,11 @@
 '''https://github.com/qiuqiangkong/audioset_tagging_cnn/blob/master/pytorch/models.py'''
 
+from typing import Any
 import torch
 from torch import nn
 import torch.nn.functional as F
+from config import hparams
+import os
 
 __author__ = "Soham Tiwari"
 __credits__ = ["qiuqiangkong"]
@@ -11,6 +14,8 @@ __version__ = "0.0.0"
 __maintainer__ = "Soham Tiwari"
 __email__ = "soham.tiwari800@gmail.com"
 __status__ = "Development"
+
+hp = hparams()
 
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 def init_layer(layer):
@@ -96,7 +101,7 @@ class Cnn10(nn.Module):
         # 2. Or change bn0 to 128, but ideally avoid this step right
         # 3. Remove all intermediate layers between input and pann 
         
-        x = input.unsqueeze(1)   # -> (batch_size, 1, time_steps, mel_bins)
+        x = input  # -> (batch_size, 1, time_steps, mel_bins)
         x = x.transpose(1, 3)   # -> (batch_size, mel_bins, time_steps, 1)
         x = self.bn0(x)         # -> (batch_size, mel_bins, time_steps, 1)
         x = x.transpose(1, 3)   # -> (batch_size, 1, time_steps, mel_bins)
@@ -116,7 +121,7 @@ class Cnn10(nn.Module):
         x = x1 + x2
         x = F.dropout(x, p=0.5, training=self.training)
         x = F.relu_(self.fc1(x))
-        embedding = F.dropout(x, p=0.5, training=self.training)
+        # embedding = F.dropout(x, p=0.5, training=self.training)
 
         return x
 
@@ -192,3 +197,40 @@ class Tag(nn.Module):
         # output = self.fc(x)
 
         return output
+
+class VOICePANN(nn.Module):
+    """ConvNeXt Model with output linear layer
+    """
+
+    def __init__(self,
+                 num_classes: int = hp.num_classes,
+                 input_height: int = hp.input_height, input_width: int = hp.input_width,
+                 pann_encoder_ckpt_path: str = hp.pann_encoder_ckpt_path,
+                 *args: Any, **kwargs: Any) -> None:
+
+        super(VOICePANN, self).__init__(*args, **kwargs)
+        self.num_classes = num_classes
+        self.input_height = input_height
+        self.input_width = input_width
+        self.pann_encoder_ckpt_path = pann_encoder_ckpt_path
+        self.change_channels_to_64 = nn.Conv2d(self.input_width, 64, 1)
+        self.pann = Cnn10()
+        if os.path.exists(self.pann_encoder_ckpt_path):
+            self.pann.load_state_dict(torch.load(self.pann_encoder_ckpt_path)['model'], strict = False)
+            print(f'loaded pann_cnn10 pretrained encoder state from {self.pann_encoder_ckpt_path}')
+        # output shape
+        self.head = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.GELU(),
+            nn.Linear(256, 3*self.num_classes)
+        )
+
+    def forward(self, input):
+        x = x # -> (batch_size, 1, num_frames, n_mels)
+        x = x.transpose(1, 3) # -> (batch_size, n_mels, num_frames, 1)
+        x = self.change_channels_to_64(x) # -> (batch_size, 64, num_frames, 1)
+        x = x.transpose(1, 3) # -> (batch_size, 1, num_frames, 64)
+        x = self.pann(x)
+        x = self.head(x) # -> (batch_size, 3*num_classes)
+        x = torch.unsqueeze(x, dim=-2) # -> (batch_size, 1(=num_subwindows), 3*num_classes)
+        return x

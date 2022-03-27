@@ -2,6 +2,7 @@ import argparse
 from models.YOHO import Yoho
 from models.YOHO_tf import YohoTF
 from models.VOICeConvNeXt import VOICeConvNeXt
+from models.pann_encoder import VOICePANN
 from utils.data_utils import VOICeDataModule
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor
