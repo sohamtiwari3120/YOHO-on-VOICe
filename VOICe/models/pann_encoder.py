@@ -84,11 +84,13 @@ class Cnn10(nn.Module):
         self.conv_block2 = ConvBlock(in_channels=64, out_channels=128)
         self.conv_block3 = ConvBlock(in_channels=128, out_channels=256)
         self.conv_block4 = ConvBlock(in_channels=256, out_channels=512)
+        self.fc1 = nn.Linear(512, 512, bias=True)
         self.init_weight()
 
     def init_weight(self):
         init_bn(self.bn0)
-
+        init_layer(self.fc1)
+        
     def forward(self, input):
         # 1. Try pooling/linear layer
         # 2. Or change bn0 to 128, but ideally avoid this step right
@@ -108,7 +110,7 @@ class Cnn10(nn.Module):
         x = self.conv_block4(x, pool_size=(2, 2), pool_type='avg')
         x = F.dropout(x, p=0.2, training=self.training)     #(batch_size, 512, T/16, mel_bins/16)
         x = torch.mean(x, dim=3)
-        
+
         (x1, _) = torch.max(x, dim=2)
         x2 = torch.mean(x, dim=2)
         x = x1 + x2
