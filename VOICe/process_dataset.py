@@ -1,12 +1,14 @@
 import argparse
 from loguru import logger
-from config import snr
+from config import hparams
 from utils.data_utils import generate_windows_and_anns, save_logmelspec_and_labels, convert_to_mono, envs, data_modes
 logger.add('process_dataset.log', rotation='500 KB')
 
+hp = hparams()
+
 @logger.catch
 def main(args):
-    logger.info(f'Starting processing of entire dataset for {snr} audio.')
+    logger.info(f'Starting processing of entire dataset for {hp.snr} audio.')
     if not args.skip_mono_conversion:
         logger.info(f'First converting all audios to mono.')
         convert_to_mono()
