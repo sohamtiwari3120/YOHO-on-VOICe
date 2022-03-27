@@ -107,6 +107,14 @@ class Cnn10(nn.Module):
         x = F.dropout(x, p=0.2, training=self.training)
         x = self.conv_block4(x, pool_size=(2, 2), pool_type='avg')
         x = F.dropout(x, p=0.2, training=self.training)     #(batch_size, 512, T/16, mel_bins/16)
+        x = torch.mean(x, dim=3)
+        
+        (x1, _) = torch.max(x, dim=2)
+        x2 = torch.mean(x, dim=2)
+        x = x1 + x2
+        x = F.dropout(x, p=0.5, training=self.training)
+        x = F.relu_(self.fc1(x))
+        embedding = F.dropout(x, p=0.5, training=self.training)
 
         return x
 
