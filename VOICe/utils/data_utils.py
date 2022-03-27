@@ -475,7 +475,7 @@ class VOICeDataModule(pl.LightningDataModule):
     """PyTorch-Lightning data module for VOICe dataset.
     """
 
-    def __init__(self, env: str, batch_size: int = hp.batch_size, train_shuffle: bool = hp.train_shuffle, val_shuffle: bool = hp.val_shuffle, test_shuffle: bool = hp.test_shuffle, train_spec_transform: bool = hp.train_spec_transform, val_spec_transform: bool = hp.val_spec_transform, test_spec_transform: bool = hp.est_spec_transform, num_workers: int = hp.num_workers):
+    def __init__(self, env: str, batch_size: int = hp.batch_size, train_shuffle: bool = hp.train_shuffle, val_shuffle: bool = hp.val_shuffle, test_shuffle: bool = hp.test_shuffle, train_spec_transform: bool = hp.train_spec_transform, val_spec_transform: bool = hp.val_spec_transform, test_spec_transform: bool = hp.test_spec_transform, num_workers: int = hp.num_workers):
         """PyTorch Lightning Custom LightninDataModule for VOICe Dataset
 
         Args:
