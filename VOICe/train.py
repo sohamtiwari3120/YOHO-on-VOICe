@@ -27,7 +27,7 @@ def pytorch(args):
     logger.add(os.path.join(
         expt_folder, f'{args.backend}_train_{env}.log'))
     logger.info(f'Using {args.backend} backend')
-    logger.info(f'{expt_name}: Starting training of model for {env} audio.')
+    logger.info(f'{expt_name}: Starting training of model for {env} audio. Saving checkpoints and logs in {expt_folder}.')
 
     if args.chkpt_path is not None:
         model = LM.load_from_checkpoint(args.chkpt_path)
