@@ -3,13 +3,14 @@ import os
 import numpy as np
 import torch
 from torch import nn
-from config import num_classes, window_len_secs, num_classes, num_subwindows, rev_class_dict, backends, snr, initialize_layer, model_name
+from config import hparams
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
 from utils.evaluate_utils import compute_sed_f1_errorrate
 from utils.data_utils import file_paths, construct_audio_windows, convert_path_to_mono, get_log_melspectrogram, merge_sound_events
 from models.kervolution_pytorch import KernelConv2d, LinearKernel, PolynomialKernel, GaussianKernel
 
+hp = hparams()
 
 def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:
     """Auxiliary function to help calculate the resulting dimension after performing the convolution operation.
@@ -107,7 +108,7 @@ def mse(y_true: torch.Tensor, y_pred: torch.Tensor, weighted: bool = False) -> t
     squared_difference = torch.square(y_true - y_pred)
     if weighted:
         probability_multiplier = torch.ones_like(squared_difference)
-        for i in range(num_classes):
+        for i in range(hp.num_classes):
             # multiply squared difference of start time for event i by the prob of event i occuring
             probability_multiplier[:, :, 3*i+1] = y_true[:, :, 3*i]
             # multiply squared difference of end time for event i by the prob of event i occuring
@@ -134,7 +135,7 @@ def weighted_mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     return mse(y_true, y_pred, True)
 
 
-def convert_model_preds_to_soundevents(preds: np.ndarray, window_len_secs: float = window_len_secs, num_subwindows: int = num_subwindows, num_classes: int = num_classes, win_ranges: Optional[List[List[float]]] = None) -> List[Tuple[float, float, str]]:
+def convert_model_preds_to_soundevents(preds: np.ndarray, window_len_secs: float = hp.window_len_secs, num_subwindows: int = hp.num_subwindows, num_classes: int = hp.num_classes, win_ranges: Optional[List[List[float]]] = None) -> List[Tuple[float, float, str]]:
     """Converts model compatible annotations into human readable annotation, [event_start_time, event_end_time, event_name]. Note: 0<=event_start_time, event_end_time<=window_len_secs
 
     Args:
@@ -163,7 +164,7 @@ def convert_model_preds_to_soundevents(preds: np.ndarray, window_len_secs: float
                         start += win_ranges[i][0]
                         end += win_ranges[i][0]
                     events_curr_audio_win.append(
-                        [start, end, rev_class_dict[k]])
+                        [start, end, hp.rev_class_dict[k]])
 
         sound_events += events_curr_audio_win
     return sound_events
@@ -227,7 +228,7 @@ class MonitorSedF1Callback(Callback):
         Callback (pytorch_lightning.callbacks.Callback): PyTorch Lightning Callback base class
     """
 
-    def __init__(self, env: str, expt_folder: str, model_name: str = model_name):
+    def __init__(self, env: str, expt_folder: str, model_name: str = hp.model_name):
         super(MonitorSedF1Callback, self).__init__()
         self.best_f1 = 0.0
         self.best_error = np.inf
@@ -283,7 +284,7 @@ class InitializedConv1d(nn.Conv1d):
     """Conv1d layer initalized using init_layer
     """
 
-    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=initialize_layer) -> None:
+    def __init__(self, in_channels: int, out_channels: int, kernel_size, stride=1, padding=0, dilation=1, groups: int = 1, bias: bool = True, padding_mode: str = 'zeros', device=None, dtype=None, initialize_layer=hp.initialize_layer) -> None:
         super().__init__(in_channels, out_channels, kernel_size, stride,
                          padding, dilation, groups, bias, padding_mode, device, dtype)
         self.initialize_layer = initialize_layer
@@ -295,7 +296,7 @@ class InitializedKerv2d(KernelConv2d):
     """Kervolutional 2D layer initalized using init_layer
     """
 
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=None, padding_mode='zeros', initialize_layer=initialize_layer, kernel_fn=LinearKernel, *args: Any, **kwargs: Any):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=None, padding_mode='zeros', initialize_layer=hp.initialize_layer, kernel_fn=LinearKernel, *args: Any, **kwargs: Any):
         super().__init__(in_channels, out_channels, kernel_size, kernel_fn, stride,
                          padding, dilation, groups, bias, padding_mode, *args, **kwargs)
         self.initialize_layer = initialize_layer
@@ -319,7 +320,7 @@ class InitializedBatchNorm2d(nn.BatchNorm2d):
     """BatchNorm2d layer initalized using init_bn
     """
 
-    def __init__(self, num_features, eps=0.00001, momentum=0.1, affine=True, track_running_stats=True, device=None, dtype=None, initialize_layer=initialize_layer):
+    def __init__(self, num_features, eps=0.00001, momentum=0.1, affine=True, track_running_stats=True, device=None, dtype=None, initialize_layer=hp.initialize_layer):
         super().__init__(num_features, eps, momentum,
                          affine, track_running_stats, device, dtype)
         self.initialize_layer = initialize_layer

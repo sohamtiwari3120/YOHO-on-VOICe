@@ -1,6 +1,4 @@
-from email.mime import audio
 from loguru import logger
-from config import snr
 from utils.data_utils import process_audio_file
 from utils.torch_utils import convert_model_preds_to_soundevents, merge_sound_events
 import argparse

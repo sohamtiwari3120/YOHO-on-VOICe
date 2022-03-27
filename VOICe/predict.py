@@ -2,7 +2,9 @@ import argparse
 from utils.torch_utils import predict_audio_path
 from utils.pl_utils import LM
 from loguru import logger
-from config import env
+from config import hparams
+
+hp = hparams()
 
 @logger.catch
 def main(args):
@@ -25,7 +27,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='For making realtime predictons.')
-    parser.add_argument('-e', '--env', type=str, default=env)
+    parser.add_argument('-e', '--env', type=str, default=hp.env)
     parser.add_argument('-cp', '--chkpt_path', type=str, default=None)
     parser.add_argument('-ap', '--audio_path', type=str)
 

@@ -2,12 +2,13 @@ import argparse
 from loguru import logger
 import numpy as np
 import os
-from config import source_env, target_env, data_mode, backend, backends, snr
+from config import hparams
 from utils.torch_utils import generate_save_predictions
 from utils.evaluate_utils import compute_sed_f1_errorrate
 from utils.data_utils import data_modes
 from utils.pl_utils import LM
 
+hp = hparams()
 
 @logger.catch
 def evaluate(args):
@@ -22,7 +23,7 @@ def evaluate(args):
         f'{args.backend}_eval_src_{source_env}_target_{target_env}.log', rotation='500 KB')
     logger.info(f'Loading best f1 model for {source_env} audio.')
     model_ckpt_folder_path = os.path.join(os.path.dirname(__file__),
-                                          'model_checkpoints', f'{snr}-mono', backends[0], expt_name)
+                                          'model_checkpoints', f'{hp.snr}-mono', hp.backends[0], expt_name)
     chkpt_path = os.path.join(model_ckpt_folder_path,
                               f"model-{source_env}-best-f1.ckpt")
     if not os.path.exists:
@@ -46,11 +47,11 @@ if __name__ == '__main__':
         description='For making realtime predictons.')
     parser.add_argument('-en', '--expt_name', type=str, required=True)
     parser.add_argument('-b', '--backend', type=str,
-                        default=backend, choices=backends)
-    parser.add_argument('-se', '--source_env', type=str, default=source_env)
-    parser.add_argument('-te', '--target_env', type=str, default=target_env)
+                        default=hp.backend, choices=hp.backends)
+    parser.add_argument('-se', '--source_env', type=str, default=hp.source_env)
+    parser.add_argument('-te', '--target_env', type=str, default=hp.target_env)
     parser.add_argument('-m', '--data_mode', type=str,
-                        default=data_mode, choices=data_modes)
+                        default=hp.data_mode, choices=data_modes)
 
     args = parser.parse_args()
     f1, error = evaluate(args)

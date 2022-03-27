@@ -2,15 +2,17 @@ from typing import Any
 import torch
 from torch import nn
 from models.convnext import convnext_tiny
-from config import num_classes, input_height, input_width
+from config import hparams
+
+hp = hparams()
 
 class VOICeConvNeXt(nn.Module):
     """ConvNeXt Model with output linear layer
     """
 
     def __init__(self,
-                 num_classes: int = num_classes,
-                 input_height: int = input_height, input_width: int = input_width,
+                 num_classes: int = hp.num_classes,
+                 input_height: int = hp.input_height, input_width: int = hp.input_width,
                  *args: Any, **kwargs: Any) -> None:
 
         super(VOICeConvNeXt, self).__init__(*args, **kwargs)

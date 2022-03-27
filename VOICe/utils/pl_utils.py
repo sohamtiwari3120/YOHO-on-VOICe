@@ -5,8 +5,10 @@ from torch import nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning.core.lightning import LightningModule
 from typing import Any
-from config import learning_rate, mode, patience, factor, adam_eps, monitor, loss_function_str
+from config import hparams
 from utils.torch_utils import weighted_mse, mse, my_loss_fn
+
+hp = hparams()
 
 class LM(LightningModule):
     """PyTorch (Lightning) Module for YOHO algorithm
@@ -17,7 +19,7 @@ class LM(LightningModule):
 
     def __init__(self,
                  model: nn.Module,
-                 learning_rate: double = learning_rate, loss_function=eval(loss_function_str),
+                 learning_rate: double = hp.learning_rate, loss_function=eval(hp.loss_function_str),
                  *args: Any, **kwargs: Any) -> None:
 
         super(LM, self).__init__(*args, **kwargs)
@@ -48,12 +50,12 @@ class LM(LightningModule):
     # check for default parameter values for tf and pytorch
     def configure_optimizers(self):
         opt = Adam(self.model.parameters(),
-                   lr=self.learning_rate, eps=adam_eps)
+                   lr=self.learning_rate, eps=hp.adam_eps)
         return {
             "optimizer": opt,
             "lr_scheduler": {
-                "scheduler": ReduceLROnPlateau(opt, mode=mode, patience=patience, factor=factor),
-                "monitor": monitor,
+                "scheduler": ReduceLROnPlateau(opt, mode=hp.mode, patience=hp.patience, factor=hp.factor),
+                "monitor": hp.monitor,
                 # If "monitor" references validation metrics, then "frequency" should be set to a
                 # multiple of "trainer.check_val_every_n_epoch".
             }

@@ -2,26 +2,27 @@ from typing import List
 import os
 import tensorflow as tf
 from tensorflow.keras.regularizers import l2
-from config import depthwise_layers, input_height, input_width, num_classes, l2_bias_reg_first_conv2d, l2_bias_reg_remaining_conv2d, l2_kernel_reg_first_conv2d, l2_kernel_reg_remaining_conv2d, batch_norm_eps, spatial_dropout, learning_rate, epochs, fit_verbose, env, min_delta, tf_patience, tf_monitor
+from config import hparams
 from utils.types import depthwise_layers_type
 from utils.tf_utils import MonitorSedF1CallbackTf
 from utils.data_utils import envs
 
+hp = hparams()
 
 class YohoTF:
     def __init__(self,
                  expt_folder: str,
-                 env: str = env,
-                 depthwise_layers: depthwise_layers_type = depthwise_layers,
-                 num_classes: int = num_classes,
-                 input_height: int = input_height,
-                 input_width: int = input_width,
-                 l2_bias_reg_first_conv2d: float = l2_bias_reg_first_conv2d,
-                 l2_bias_reg_remaining_conv2d: float = l2_bias_reg_remaining_conv2d,
-                 l2_kernel_reg_first_conv2d: float = l2_kernel_reg_first_conv2d,
-                 l2_kernel_reg_remaining_conv2d: float = l2_kernel_reg_remaining_conv2d,
-                 batch_norm_eps: float = batch_norm_eps,
-                 spatial_dropout: float = spatial_dropout) -> None:
+                 env: str = hp.env,
+                 depthwise_layers: depthwise_layers_type = hp.depthwise_layers,
+                 num_classes: int = hp.num_classes,
+                 input_height: int = hp.input_height,
+                 input_width: int = hp.input_width,
+                 l2_bias_reg_first_conv2d: float = hp.l2_bias_reg_first_conv2d,
+                 l2_bias_reg_remaining_conv2d: float = hp.l2_bias_reg_remaining_conv2d,
+                 l2_kernel_reg_first_conv2d: float = hp.l2_kernel_reg_first_conv2d,
+                 l2_kernel_reg_remaining_conv2d: float = hp.l2_kernel_reg_remaining_conv2d,
+                 batch_norm_eps: float = hp.batch_norm_eps,
+                 spatial_dropout: float = hp.spatial_dropout) -> None:
 
         self.model_ckpt_folder_path = expt_folder
         if env not in envs:
@@ -71,13 +72,13 @@ class YohoTF:
     def summary(self):
         self.model.summary()
 
-    def train_and_validate(self, train_data, validation_data, loss_function, learning_rate: float = learning_rate, epochs: int = epochs, fit_verbose: int = fit_verbose, callbacks: List[tf.keras.callbacks.Callback] = None):
+    def train_and_validate(self, train_data, validation_data, loss_function, learning_rate: float = hp.learning_rate, epochs: int = hp.epochs, fit_verbose: int = hp.fit_verbose, callbacks: List[tf.keras.callbacks.Callback] = None):
         self.model.compile(optimizer=tf.keras.optimizers.Adam(
             learning_rate=learning_rate), loss=loss_function)
         if callbacks is None:
             callbacks = [MonitorSedF1CallbackTf(self.env, self.model_ckpt_folder_path),
-                         tf.keras.callbacks.EarlyStopping(monitor=tf_monitor,
-                                                          min_delta=min_delta, patience=tf_patience)]
+                         tf.keras.callbacks.EarlyStopping(monitor=hp.tf_monitor,
+                                                          min_delta=hp.min_delta, patience=hp.tf_patience)]
         self.model.fit(x=train_data,
                        validation_data=validation_data,
                        epochs=epochs,

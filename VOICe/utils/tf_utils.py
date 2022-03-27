@@ -4,10 +4,12 @@ import numpy as np
 import glob
 
 from utils.evaluate_utils import compute_sed_f1_errorrate
-from config import num_classes, snr, shuffle, batch_size, input_height, input_width, num_subwindows, backends
+from config import hparams
 from utils.data_utils import convert_path_to_mono, file_paths, envs, data_modes, get_logmel_label_paths, sort_nicely
 from utils.torch_utils import predict_audio_path
 from utils.SpecAugment import spec_augment_tensorflow
+
+hp = hparams()
 
 def sse(y_true: tf.Tensor, y_pred: tf.Tensor, weighted: bool = False) -> tf.Tensor:
     """Computes Mean Sum of Squared Error for the true and predicted values. For each class, after computing the squared error, multiplies it by the probility of that sound event occuring (from y_true). Finally returns the aggregate loss.
@@ -21,7 +23,7 @@ def sse(y_true: tf.Tensor, y_pred: tf.Tensor, weighted: bool = False) -> tf.Tens
     squared_difference = tf.square(y_true - y_pred)
     if weighted:
         probability_multiplier = tf.ones_like(squared_difference)
-        for i in range(num_classes):
+        for i in range(hp.num_classes):
             # multiply squared difference of start time for event i by the prob of event i occuring
             probability_multiplier[:, :, 3*i+1] = y_true[:, :, 3*i]
             # multiply squared difference of end time for event i by the prob of event i occuring
@@ -114,7 +116,7 @@ class MonitorSedF1CallbackTf(tf.keras.callbacks.Callback):
 class DataGenerator(tf.keras.utils.Sequence):
     'Generates data for Keras'
 
-    def __init__(self, mode: str, env: str, spec_transform=False, shuffle: bool = shuffle, batch_size: int = batch_size):
+    def __init__(self, mode: str, env: str, spec_transform=False, shuffle: bool = hp.shuffle, batch_size: int = hp.batch_size):
         """Initialises the VOICe dataset class to load data for given mode and env. (the logmel_path and label_path variables are env and mode specific.)
 
         Args:
@@ -158,10 +160,10 @@ class DataGenerator(tf.keras.utils.Sequence):
                      self.batch_size: (idx+1)*self.batch_size]])  # to convert (H, W) -> (H, W, C)
         # (height, width, channels=1)
         X = np.expand_dims(X, axis=3)
-        assert X.shape == (self.batch_size, input_height, input_width, 1)
+        assert X.shape == (self.batch_size, hp.input_height, hp.input_width, 1)
         y = np.array([np.load(self.label_npy[i]) for i in self.indices[idx *
                      self.batch_size:(idx+1)*self.batch_size]])
-        assert y.shape == (self.batch_size, num_subwindows, 3*num_classes)
+        assert y.shape == (self.batch_size, hp.num_subwindows, 3*hp.num_classes)
 
         if self.spec_transform and self.mode == 'training':
             tau = X.shape[1]

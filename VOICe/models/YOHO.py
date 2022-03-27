@@ -3,17 +3,19 @@ from torch.nn import functional as F
 from torch import nn
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
-from config import num_classes, input_height, input_width, depthwise_layers
+from config import hparams
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d
+
+hp = hparams()
 
 class Yoho(nn.Module):
     """PyTorch Model for Yoho Algorithm
     """
 
     def __init__(self,
-                 depthwise_layers: depthwise_layers_type = depthwise_layers,
-                 num_classes: int = num_classes,
-                 input_height: int = input_height, input_width: int = input_width,
+                 depthwise_layers: depthwise_layers_type = hp.depthwise_layers,
+                 num_classes: int = hp.num_classes,
+                 input_height: int = hp.input_height, input_width: int = hp.input_width,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)

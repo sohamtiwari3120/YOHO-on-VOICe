@@ -11,11 +11,13 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 from subprocess import Popen, PIPE
-from config import sample_rate, window_len_secs, hop_len_secs, class_dict, mel_hop_len, mel_win_len, n_fft, n_mels, fmax, fmin, num_subwindows, snr, time_warping_para, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num, batch_size, num_workers, rev_class_dict, max_consecutive_event_silence, train_shuffle, val_shuffle, test_shuffle, train_spec_transform, val_spec_transform, test_spec_transform, save_logmelspec, save_labels
+from config import hparams
 from tqdm import tqdm
 from utils.types import file_paths_type
 from utils.SpecAugment import spec_augment_pytorch
 from utils.regex_utils import sort_nicely
+
+hp = hparams()
 
 envs = ['vehicle', 'outdoor', 'indoor']
 data_modes = ['training', 'test', 'validation']
@@ -43,7 +45,7 @@ def read_annotation(filepath):
 for mode in data_modes:
     file_paths[mode] = {}
     base_path = os.path.join(os.path.dirname(
-        os.path.dirname(__file__)), 'data', snr)
+        os.path.dirname(__file__)), 'data', hp.snr)
     for e in envs:
         file_paths[mode][e] = [base_path + '/' + p[0]
                                for p in read_annotation(os.path.join(base_path, f"{e}_source_{mode}.txt"))]
@@ -53,7 +55,7 @@ def convert_to_mono():
     """Convert audios to mono channels.
     """
     base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
-    os.makedirs(os.path.join(base_dir, f'{snr}-mono'), exist_ok=True)
+    os.makedirs(os.path.join(base_dir, f'{hp.snr}-mono'), exist_ok=True)
 
     training_files = [ele for sublist in list(
         file_paths['training'].values()) for ele in sublist]
@@ -73,10 +75,10 @@ def convert_to_mono():
     for mode in data_modes:
         for e in envs:
             os.makedirs(os.path.join(
-                base_dir, f'{snr}-mono', f"{mode}-data", f"{e}"), exist_ok=True)
+                base_dir, f'{hp.snr}-mono', f"{mode}-data", f"{e}"), exist_ok=True)
 
 
-def construct_audio_windows(audio_path, sample_rate=sample_rate, window_len_secs=window_len_secs, hop_len_secs=hop_len_secs):
+def construct_audio_windows(audio_path, sample_rate=hp.sample_rate, window_len_secs=hp.window_len_secs, hop_len_secs=hp.hop_len_secs):
     """chunks audio files into windows of length window_len with hop_len, and returns these chunked audio files as well as the start and end time of each window.
 
     Args:
@@ -113,7 +115,7 @@ def construct_audio_windows(audio_path, sample_rate=sample_rate, window_len_secs
     return a_ex, win_ranges
 
 
-def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecutive_event_silence: float = max_consecutive_event_silence) -> List[Tuple[float, float, str]]:
+def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecutive_event_silence: float = hp.max_consecutive_event_silence) -> List[Tuple[float, float, str]]:
     """Function to merge consecutive annotations for the same event into one, and to decrease the precision of the predictions to 3rd decimal place.
 
     Args:
@@ -123,7 +125,7 @@ def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecu
     Returns:
         List[float, float, str]: List of merged sound events with less precise sound boundaries.
     """
-    class_wise_events = {c: [] for c in rev_class_dict}
+    class_wise_events = {c: [] for c in hp.rev_class_dict}
     for event in sound_events:
         class_wise_events[event[2]].append(event)
     # grouping all annotations by their class
@@ -143,7 +145,7 @@ def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecu
     # }
     all_events = []
 
-    for k in rev_class_dict:
+    for k in hp.rev_class_dict:
         curr_events = class_wise_events[k]
         count = 0
         # skipping the last ann in that class to compare ann[i] and ann[i+1]
@@ -178,7 +180,7 @@ def merge_sound_events(sound_events: List[Tuple[float, float, str]], max_consecu
     return all_events
 
 
-def extract_anns_for_audio_window(annotation_path, window_start_secs, window_end_secs, window_len_secs=window_len_secs):
+def extract_anns_for_audio_window(annotation_path, window_start_secs, window_end_secs, window_len_secs=hp.window_len_secs):
     """Given the annotation file, returns the annotations corresponding to the audio window in focus.
 
     Args:
@@ -208,7 +210,7 @@ def extract_anns_for_audio_window(annotation_path, window_start_secs, window_end
     return all_events
 
 
-def get_model_compatible_anns(events, window_len_secs=window_len_secs, num_subwindows=num_subwindows):
+def get_model_compatible_anns(events, window_len_secs=hp.window_len_secs, num_subwindows=hp.num_subwindows):
     """Converts the annotations for a particular audio window/spectrogram into format appropriate for the output layer of the model. Also normalizes the event start and end times to a value between 0 and 1 for the audio window in focus.
 
     Args:
@@ -222,7 +224,7 @@ def get_model_compatible_anns(events, window_len_secs=window_len_secs, num_subwi
     #   its generating output formatted for for neural network
     # REMEMBER: bins are disjoint sequences, frames can be overlapping
     bin_length = window_len_secs/num_subwindows
-    labels = np.zeros((num_subwindows, len(class_dict.keys()) * 3))
+    labels = np.zeros((num_subwindows, len(hp.class_dict.keys()) * 3))
 
     for e in events:
 
@@ -238,27 +240,27 @@ def get_model_compatible_anns(events, window_len_secs=window_len_secs, num_subwi
         n_bins = stop_bin - start_bin
 
         if n_bins == 0:
-            labels[start_bin, class_dict[e[2]] * 3:class_dict[e[2]]
+            labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
                    * 3 + 3] = [1, start_time_2, stop_time_2]
 
         elif n_bins == 1:
-            labels[start_bin, class_dict[e[2]] * 3:class_dict[e[2]]
+            labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
                    * 3 + 3] = [1, start_time_2, bin_length]
 
             if stop_time_2 > 0.0:
-                labels[stop_bin, class_dict[e[2]] * 3:class_dict[e[2]]
+                labels[stop_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
                        * 3 + 3] = [1, 0.0, stop_time_2]
 
         elif n_bins > 1:
-            labels[start_bin, class_dict[e[2]] * 3:class_dict[e[2]]
+            labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
                    * 3 + 3] = [1, start_time_2, bin_length]
 
             for i in range(1, n_bins):
-                labels[start_bin + i, class_dict[e[2]] *
-                       3:class_dict[e[2]] * 3 + 3] = [1, 0.0, bin_length]
+                labels[start_bin + i, hp.class_dict[e[2]] *
+                       3:hp.class_dict[e[2]] * 3 + 3] = [1, 0.0, bin_length]
 
             if stop_time_2 > 0.0:
-                labels[stop_bin, class_dict[e[2]] * 3:class_dict[e[2]]
+                labels[stop_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
                        * 3 + 3] = [1, 0.0, stop_time_2]
 
     # labels[:, [1, 2, 4, 5]] /= bin_length => normalising values
@@ -271,7 +273,7 @@ def get_model_compatible_anns(events, window_len_secs=window_len_secs, num_subwi
     return labels
 
 
-def get_log_melspectrogram(audio, sr=sample_rate, hop_length=mel_hop_len, win_length=mel_win_len, n_fft=n_fft, n_mels=n_mels, fmin=fmin, fmax=fmax):
+def get_log_melspectrogram(audio, sr=hp.sample_rate, hop_length=hp.mel_hop_len, win_length=hp.mel_win_len, n_fft=hp.n_fft, n_mels=hp.n_mels, fmin=hp.fmin, fmax=hp.fmax):
     """Return the log-scaled Mel bands of an audio signal."""
     audio_2 = librosa.util.normalize(audio)
     bands = librosa.feature.melspectrogram(
@@ -288,10 +290,10 @@ def convert_path_to_mono(path):
     Returns:
         str: Output file path for mono files
     """
-    return path.replace(f"{snr}", f"{snr}-mono")
+    return path.replace(f"{hp.snr}", f"{hp.snr}-mono")
 
 
-def generate_windows_and_anns(mode: str, env: str, sample_rate=sample_rate, window_len_secs=window_len_secs, hop_len_secs=hop_len_secs, num_subwindows=num_subwindows):
+def generate_windows_and_anns(mode: str, env: str, sample_rate=hp.sample_rate, window_len_secs=hp.window_len_secs, hop_len_secs=hp.hop_len_secs, num_subwindows=hp.num_subwindows):
     """Function to generate and return audio windows and corresponding model compatible annotations/labels
 
     Args:
@@ -343,22 +345,22 @@ def process_audio_file(audio_path):
     """
     mono_audio_path = convert_path_to_mono(audio_path)
     audio_wins, window_ranges = construct_audio_windows(
-        mono_audio_path, sample_rate, window_len_secs, hop_len_secs)
+        mono_audio_path, hp.sample_rate, hp.window_len_secs, hp.hop_len_secs)
     ann_path = audio_path.replace('.wav', '.txt')
     all_anns = []
     all_model_compatible_anns = []
     for i, w in enumerate(window_ranges):
         anns = extract_anns_for_audio_window(
-            ann_path, w[0], w[1], window_len_secs)
+            ann_path, w[0], w[1], hp.window_len_secs)
         all_anns.append(anns)
         compatible_ann = get_model_compatible_anns(
-            anns, window_len_secs, num_subwindows)
+            anns, hp.window_len_secs, hp.num_subwindows)
         all_model_compatible_anns.append(compatible_ann)
 
     return audio_wins, window_ranges, all_anns, all_model_compatible_anns
 
 
-def get_logmel_label_paths(mode, env, num_subwindows: int = num_subwindows):
+def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows):
     """A function to simply return folder dirpaths where logmelspectrogram and label npy files will be stores.
 
     Args:
@@ -373,14 +375,14 @@ def get_logmel_label_paths(mode, env, num_subwindows: int = num_subwindows):
     base_dir = os.path.join(os.path.dirname(
         os.path.dirname(__file__)), 'data')
     folder_path = os.path.join(
-        base_dir, f'{snr}-mono', f'{mode}-data', env)
+        base_dir, f'{hp.snr}-mono', f'{mode}-data', env)
     logmel_path = os.path.join(folder_path, 'logmels_npy')
     label_path = os.path.join(
         folder_path, 'labels_npy', f'num_subwindows={num_subwindows}')
     return logmel_path, label_path
 
 
-def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec: bool = save_logmelspec, save_labels: bool = save_labels):
+def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec: bool = hp.save_logmelspec, save_labels: bool = hp.save_labels):
     """To save the generated logmelspecs and compatible annotations in npy format.
 
     Args:
@@ -457,8 +459,8 @@ class VOICeDataset(Dataset):
             y = np.load(self.label_npy[idx])
 
             if self.spec_transform and self.mode == 'training':
-                X = spec_augment_pytorch.spec_augment(torch.tensor(X), time_warping_para=time_warping_para, frequency_masking_para=frequency_masking_para,
-                                                      time_masking_para=time_masking_para, frequency_mask_num=frequency_mask_num, time_mask_num=time_mask_num)
+                X = spec_augment_pytorch.spec_augment(torch.tensor(X), time_warping_para=hp.time_warping_para, frequency_masking_para=hp.frequency_masking_para,
+                                                      time_masking_para=hp.time_masking_para, frequency_mask_num=hp.frequency_mask_num, time_mask_num=hp.time_mask_num)
             if isinstance(X, torch.Tensor):
                 X = X.float()
             elif isinstance(X, np.ndarray):
@@ -473,7 +475,7 @@ class VOICeDataModule(pl.LightningDataModule):
     """PyTorch-Lightning data module for VOICe dataset.
     """
 
-    def __init__(self, env: str, batch_size: int = batch_size, train_shuffle: bool = train_shuffle, val_shuffle: bool = val_shuffle, test_shuffle: bool = test_shuffle, train_spec_transform: bool = train_spec_transform, val_spec_transform: bool = val_spec_transform, test_spec_transform: bool = test_spec_transform, num_workers: int = num_workers):
+    def __init__(self, env: str, batch_size: int = hp.batch_size, train_shuffle: bool = hp.train_shuffle, val_shuffle: bool = hp.val_shuffle, test_shuffle: bool = hp.test_shuffle, train_spec_transform: bool = hp.train_spec_transform, val_spec_transform: bool = hp.val_spec_transform, test_spec_transform: bool = hp.est_spec_transform, num_workers: int = hp.num_workers):
         """PyTorch Lightning Custom LightninDataModule for VOICe Dataset
 
         Args:
