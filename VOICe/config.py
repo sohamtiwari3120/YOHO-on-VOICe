@@ -140,3 +140,9 @@ class hparams:
 
     # PANN
     pann_encoder_ckpt_path = f'/notebooks/YOHO/YOHO-on-VOICe/VOICe/modelsmodels/Cnn10_mAP0.380.pth'
+
+    # CBAM
+    use_cbam = True
+    cbam_channels = 64
+    cbam_reduction_factor = 4
+    cbam_kernel_size = 7

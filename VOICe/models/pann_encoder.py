@@ -6,6 +6,7 @@ from torch import nn
 import torch.nn.functional as F
 from config import hparams
 import os
+from models.attention.CBAM import CBAMBlock
 
 __author__ = "Soham Tiwari"
 __credits__ = ["qiuqiangkong"]
@@ -18,6 +19,8 @@ __status__ = "Development"
 hp = hparams()
 
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
+
 def init_layer(layer):
     """Initialize a Linear or Convolutional layer. """
     nn.init.xavier_uniform_(layer.weight)
@@ -95,12 +98,12 @@ class Cnn10(nn.Module):
     def init_weight(self):
         init_bn(self.bn0)
         init_layer(self.fc1)
-        
+
     def forward(self, input):
         # 1. Try pooling/linear layer
         # 2. Or change bn0 to 128, but ideally avoid this step right
-        # 3. Remove all intermediate layers between input and pann 
-        
+        # 3. Remove all intermediate layers between input and pann
+
         x = input  # -> (batch_size, 1, time_steps, mel_bins)
         x = x.transpose(1, 3)   # -> (batch_size, mel_bins, time_steps, 1)
         x = self.bn0(x)         # -> (batch_size, mel_bins, time_steps, 1)
@@ -113,7 +116,8 @@ class Cnn10(nn.Module):
         x = self.conv_block3(x, pool_size=(2, 2), pool_type='avg')
         x = F.dropout(x, p=0.2, training=self.training)
         x = self.conv_block4(x, pool_size=(2, 2), pool_type='avg')
-        x = F.dropout(x, p=0.2, training=self.training)     #(batch_size, 512, T/16, mel_bins/16)
+        # (batch_size, 512, T/16, mel_bins/16)
+        x = F.dropout(x, p=0.2, training=self.training)
         x = torch.mean(x, dim=3)
 
         (x1, _) = torch.max(x, dim=2)
@@ -124,6 +128,7 @@ class Cnn10(nn.Module):
         # embedding = F.dropout(x, p=0.5, training=self.training)
 
         return x
+
 
 class Cnn14(nn.Module):
     def __init__(self):
@@ -145,7 +150,6 @@ class Cnn14(nn.Module):
         init_bn(self.bn0)
 
     def forward(self, input, mixup_lambda=None):
-
 
         x = input.unsqueeze(1)   # (batch_size, 1, time_steps, mel_bins)
         x = x.transpose(1, 3)
@@ -169,34 +173,35 @@ class Cnn14(nn.Module):
 
 
 class Tag(nn.Module):
-    def __init__(self,class_num):
+    def __init__(self, class_num):
         super(Tag, self).__init__()
         self.feature = Cnn10()
-        self.fc1 = nn.Linear(512,512,bias=True)
-        self.fc = nn.Linear(512,class_num,bias=True)
+        self.fc1 = nn.Linear(512, 512, bias=True)
+        self.fc = nn.Linear(512, class_num, bias=True)
         self.init_weights()
 
     def init_weights(self):
         init_layer(self.fc1)
         init_layer(self.fc)
 
-    def forward(self,input):
+    def forward(self, input):
         '''
         :param input: (batch_size,time_steps, mel_bins)
         :return: ()
         '''
-        x = self.feature(input)     #(batch_size, 512, T/16, mel_bins/16)
-        x = torch.mean(x,dim=3)     #(batch_size, 512, T/16)
+        x = self.feature(input)  # (batch_size, 512, T/16, mel_bins/16)
+        x = torch.mean(x, dim=3)  # (batch_size, 512, T/16)
         (x1, _) = torch.max(x, dim=2)
         x2 = torch.mean(x, dim=2)
         x = x1 + x2
         x = F.dropout(x, p=0.2, training=self.training)
         x = F.relu_(self.fc1(x))
-        #(batch_size,class_num)
+        # (batch_size,class_num)
         output = torch.sigmoid(self.fc(x))
         # output = self.fc(x)
 
         return output
+
 
 class VOICePANN(nn.Module):
     """ConvNeXt Model with output linear layer
@@ -205,10 +210,13 @@ class VOICePANN(nn.Module):
     def __init__(self,
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
-                 pann_encoder_ckpt_path: str = hp.pann_encoder_ckpt_path,
+                 pann_encoder_ckpt_path: str = hp.pann_encoder_ckpt_path, use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  *args: Any, **kwargs: Any) -> None:
 
         super(VOICePANN, self).__init__(*args, **kwargs)
+        self.use_cbam = use_cbam
+        if self.use_cbam:
+            self.cbam = CBAMBlock(channel=cbam_channels, reduction=cbam_reduction_factor, kernel_size=cbam_kernel_size)
         self.num_classes = num_classes
         self.input_height = input_height
         self.input_width = input_width
@@ -216,8 +224,10 @@ class VOICePANN(nn.Module):
         self.change_channels_to_64 = nn.Conv2d(self.input_width, 64, 1)
         self.pann = Cnn10()
         if os.path.exists(self.pann_encoder_ckpt_path):
-            self.pann.load_state_dict(torch.load(self.pann_encoder_ckpt_path)['model'], strict = False)
-            print(f'loaded pann_cnn10 pretrained encoder state from {self.pann_encoder_ckpt_path}')
+            self.pann.load_state_dict(torch.load(self.pann_encoder_ckpt_path)[
+                                      'model'], strict=False)
+            print(
+                f'loaded pann_cnn10 pretrained encoder state from {self.pann_encoder_ckpt_path}')
         # output shape
         self.head = nn.Sequential(
             nn.Linear(512, 256),
@@ -230,11 +240,14 @@ class VOICePANN(nn.Module):
         )
 
     def forward(self, input):
-        x = input.float() # -> (batch_size, 1, num_frames, n_mels)
-        x = x.transpose(1, 3) # -> (batch_size, n_mels, num_frames, 1)
-        x = self.change_channels_to_64(x) # -> (batch_size, 64, num_frames, 1)
-        x = x.transpose(1, 3) # -> (batch_size, 1, num_frames, 64)
+        x = input.float()  # -> (batch_size, 1, num_frames, n_mels)
+        x = x.transpose(1, 3)  # -> (batch_size, n_mels, num_frames, 1)
+        x = self.change_channels_to_64(x)  # -> (batch_size, 64, num_frames, 1)
+        if self.use_cbam:
+            x = self.cbam(x)  # -> (batch_size, 64, num_frames, 1)
+        x = x.transpose(1, 3)  # -> (batch_size, 1, num_frames, 64)
         x = self.pann(x)
-        x = self.head(x) # -> (batch_size, 3*num_classes)
-        x = torch.unsqueeze(x, dim=-2) # -> (batch_size, 1(=num_subwindows), 3*num_classes)
+        x = self.head(x)  # -> (batch_size, 3*num_classes)
+        # -> (batch_size, 1(=num_subwindows), 3*num_classes)
+        x = torch.unsqueeze(x, dim=-2)
         return x
