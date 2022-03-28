@@ -5,6 +5,7 @@ from models.VOICeConvNeXt import VOICeConvNeXt
 from models.pann_encoder import VOICePANN
 from utils.data_utils import VOICeDataModule
 from pytorch_lightning import Trainer
+from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor
 from utils.torch_utils import MonitorSedF1Callback
 from utils.tf_utils import DataGenerator, my_loss_fn
@@ -17,19 +18,24 @@ import os
 
 hp = hparams()
 
+
 @logger.catch
 def pytorch(args):
     env = args.env
     expt_name = args.expt_name
+    tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
+        os.path.dirname(__file__), 'lightning_logs', expt_name))
+
     expt_folder = os.path.join(os.path.dirname(__file__),
                                'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', expt_name)
     if not os.path.exists(expt_folder):
         os.makedirs(expt_folder)
-    
+
     logger.add(os.path.join(
         expt_folder, f'{args.backend}_train_{env}.log'))
     logger.info(f'Using {args.backend} backend')
-    logger.info(f'{expt_name}: Starting training of model for {env} audio. Saving checkpoints and logs in {expt_folder}.')
+    logger.info(
+        f'{expt_name}: Starting training of model for {env} audio. Saving checkpoints and logs in {expt_folder}.')
 
     if args.chkpt_path is not None:
         model = LM.load_from_checkpoint(args.chkpt_path)
@@ -44,7 +50,7 @@ def pytorch(args):
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     trainer = Trainer(callbacks=[MonitorSedF1Callback(
-        env, expt_folder), lr_monitor], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val)
+        env, expt_folder), lr_monitor], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=tb_logger)
     voice_dm = VOICeDataModule(env)
 
     if args.auto_lr:
@@ -74,7 +80,7 @@ def tensor_flow(args):
                                'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', expt_name)
     if not os.path.exists(expt_folder):
         os.makedirs(expt_folder)
-    
+
     logger.add(os.path.join(
         expt_folder, f'{args.backend}_train_{env}.log'))
     logger.info(f'Using {args.backend} backend')
