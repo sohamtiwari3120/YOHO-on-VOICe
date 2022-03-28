@@ -222,7 +222,11 @@ class VOICePANN(nn.Module):
         self.head = nn.Sequential(
             nn.Linear(512, 256),
             nn.GELU(),
-            nn.Linear(256, 3*self.num_classes)
+            nn.Linear(256, 128),
+            nn.GELU(),
+            nn.Linear(128, 64),
+            nn.GELU(),
+            nn.Linear(64, 3*self.num_classes)
         )
 
     def forward(self, input):
