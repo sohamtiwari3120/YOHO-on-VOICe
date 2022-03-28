@@ -230,7 +230,7 @@ class VOICePANN(nn.Module):
         )
 
     def forward(self, input):
-        x = input # -> (batch_size, 1, num_frames, n_mels)
+        x = input.float() # -> (batch_size, 1, num_frames, n_mels)
         x = x.transpose(1, 3) # -> (batch_size, n_mels, num_frames, 1)
         x = self.change_channels_to_64(x) # -> (batch_size, 64, num_frames, 1)
         x = x.transpose(1, 3) # -> (batch_size, 1, num_frames, 64)
