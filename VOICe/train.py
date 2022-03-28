@@ -50,7 +50,7 @@ def pytorch(args):
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     trainer = Trainer(callbacks=[MonitorSedF1Callback(
-        env, expt_folder), lr_monitor], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=tb_logger)
+        env, expt_folder), lr_monitor], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=tb_logger, profiler='simple')
     voice_dm = VOICeDataModule(env)
 
     if args.auto_lr:
