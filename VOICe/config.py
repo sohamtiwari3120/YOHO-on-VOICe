@@ -14,7 +14,7 @@ class hparams:
     window_len_secs = 2.56
     hop_len_secs = 1.96
     max_consecutive_event_silence = 0.3
-    num_subwindows = 1
+    num_subwindows = 9
 
     # process_dataset
     save_logmelspec: bool = False
@@ -140,6 +140,8 @@ class hparams:
 
     # PANN
     pann_encoder_ckpt_path = f'/notebooks/YOHO/YOHO-on-VOICe/VOICe/modelsmodels/Cnn10_mAP0.380.pth'
+    # CNN 10
+    output_embedding: bool = False
 
     # CBAM
     use_cbam = True

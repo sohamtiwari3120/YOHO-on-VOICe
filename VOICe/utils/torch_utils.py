@@ -12,6 +12,50 @@ from models.kervolution_pytorch import KernelConv2d, LinearKernel, PolynomialKer
 
 hp = hparams()
 
+
+def compute_conv_transpose_kernel_size(input_dim: int, output_dim: int, stride: int = 1, padding: Union[int, Tuple[int, int]] = 0, output_padding: Union[int, Tuple[int, int]] = 0, dilation: int = 1) -> int:
+    """Compute the kernel size for convolution transpose along a particular dim for obtaining the desired output_dim given the input_dim and other associated parameters.
+
+    Args:
+        input_dim (int): Length of the input along desired dim/axis
+        output_dim (int): Desired length of the output along desired dim/axis
+        stride (int, optional): Convolution Transpose kernel stride. Defaults to 1.
+        padding (Union[int, Tuple[int, int]], optional): Convolution Transpose input padding. Defaults to 0.
+        output_padding (Union[int, Tuple[int, int]], optional): Convolution Transpose output padding. Defaults to 0.
+        dilation (int, optional): Convolution transpose dilation. Defaults to 1.
+
+    Returns:
+        int: kernel size along desired dim/axis
+    """
+    if isinstance(padding, int):
+        padding = [padding] * 2
+    if isinstance(output_padding, int):
+        output_padding = [output_padding] * 2
+
+    kernel_size = int((output_dim - ((input_dim-1)*stride-(padding[0]+padding[1])+(
+        output_padding[0]+output_padding[1])+1))//dilation)+1
+    return kernel_size
+
+def compute_conv_kernel_size(input_dim: int, output_dim: int, stride: int = 1, padding: Union[int, Tuple[int, int]] = 0, dilation: int = 1) -> int:
+    """Compute the kernel size for convolution along a particular dim for obtaining the desired output_dim given the input_dim and other associated parameters.
+
+    Args:
+        input_dim (int): Length of the input along desired dim/axis
+        output_dim (int): Desired length of the output along desired dim/axis
+        stride (int, optional): Convolution kernel stride. Defaults to 1.
+        padding (Union[int, Tuple[int, int]], optional): Convolution input padding. Defaults to 0.
+        dilation (int, optional): Convolution dilation. Defaults to 1.
+
+    Returns:
+        int: kernel size along desired dim/axis
+    """
+    if isinstance(padding, int):
+        padding = [padding] * 2
+
+    kernel_size = (((output_dim - 1) * stride) + 1 - padding[0] - input_dim - padding[1])//(-dilation) + 1
+
+    return kernel_size
+
 def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:
     """Auxiliary function to help calculate the resulting dimension after performing the convolution operation.
 
