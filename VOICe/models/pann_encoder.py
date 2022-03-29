@@ -234,9 +234,7 @@ class VOICePANN(nn.Module):
             nn.GELU(),
             nn.Linear(256, 128),
             nn.GELU(),
-            nn.Linear(128, 64),
-            nn.GELU(),
-            nn.Linear(64, 3*self.num_classes)
+            nn.Linear(128, 3*self.num_classes)
         )
 
     def forward(self, input):
