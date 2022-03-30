@@ -245,7 +245,7 @@ class VOICePANN(nn.Module):
                                       'model'], strict=False)
             print(
                 f'loaded pann_cnn10 pretrained encoder state from {self.pann_encoder_ckpt_path}')
-        # output shape
+                
         if self.pann_output_embedding:
             self.head = nn.Sequential(
                 nn.Linear(512, 256),
@@ -257,14 +257,7 @@ class VOICePANN(nn.Module):
                 nn.Linear(64, 3*self.num_classes)
             )
         else:
-            # self.sub_head = nn.ConvTranspose2d(512, 256, kernel)
-            # with torch.no_grad():
-            #     diff = self.pann_output_height - self.pann_output_width
-            #     if diff == 0:
-            #         kernel_sub_head = 
-            #         if self.pann_output_height < 
-            kernel = (1,
-                      compute_conv_transpose_kernel_size(self.pann_output_width, 3*self.num_classes))
+            kernel = (1, compute_conv_transpose_kernel_size(self.pann_output_width, 3*self.num_classes))
 
             self.head = nn.Sequential(
                 nn.ConvTranspose2d(512, 256, kernel),
@@ -274,13 +267,16 @@ class VOICePANN(nn.Module):
                 nn.Conv2d(in_channels=128,
                           out_channels=64,
                           kernel_size=(1, 1)),
+                nn.Dropout(p = 0.2),
                 nn.Conv2d(in_channels=64,
                           out_channels=3,
                           kernel_size=(1, 1)),
+                nn.Dropout(p = 0.2),
                 nn.Conv2d(in_channels=3,
                           out_channels=1,
                           kernel_size=(1, 1)
-                          )
+                          ),
+                nn.Dropout(p = 0.2)
             )
 
     def forward(self, input):
