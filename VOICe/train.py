@@ -15,6 +15,7 @@ from config import hparams
 from torchsummary import summary
 import torch
 import os
+from datetime import datetime
 
 hp = hparams()
 
@@ -23,11 +24,12 @@ hp = hparams()
 def pytorch(args):
     env = args.env
     expt_name = args.expt_name
+    date_today = datetime.today().strftime('%d%m%Y')
     tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
-        os.path.dirname(__file__), 'lightning_logs', expt_name))
+        os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
 
     expt_folder = os.path.join(os.path.dirname(__file__),
-                               'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', expt_name)
+                               'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', date_today, expt_name)
     if not os.path.exists(expt_folder):
         os.makedirs(expt_folder)
 
@@ -35,7 +37,7 @@ def pytorch(args):
         expt_folder, f'{args.backend}_train_{env}.log'))
     logger.info(f'Using {args.backend} backend')
     logger.info(
-        f'{expt_name}: Starting training of model for {env} audio. Saving checkpoints and logs in {expt_folder}.')
+        f'{expt_name}: Starting training of model for {env} audio. Saving checkpoints and logs in {expt_folder}')
 
     if args.chkpt_path is not None:
         model = LM.load_from_checkpoint(args.chkpt_path)
@@ -76,8 +78,9 @@ def pytorch(args):
 def tensor_flow(args):
     env = args.env
     expt_name = args.expt_name
+    date_today = datetime.today().strftime('%d%m%Y')
     expt_folder = os.path.join(os.path.dirname(__file__),
-                               'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', expt_name)
+                               'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', date_today, expt_name)
     if not os.path.exists(expt_folder):
         os.makedirs(expt_folder)
 

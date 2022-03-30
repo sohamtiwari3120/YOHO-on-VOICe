@@ -1,6 +1,5 @@
 import argparse
 from loguru import logger
-import numpy as np
 import os
 from config import hparams
 from utils.torch_utils import generate_save_predictions
@@ -10,24 +9,25 @@ from utils.pl_utils import LM
 
 hp = hparams()
 
+
 @logger.catch
 def evaluate(args):
     source_env = args.source_env
     target_env = args.target_env
     data_mode = args.data_mode
-    expt_name = args.expt_name
-
+    expt_folder = args.expt_folder
+    if not os.path.exists(expt_folder):
+        raise Exception(f'Folder not found: {expt_folder}')
     logger.info(
         f'Starting evalution on {data_mode} data for source - {source_env} and target - {target_env}.')
-    logger.add(
-        f'{args.backend}_eval_src_{source_env}_target_{target_env}.log', rotation='500 KB')
+    logger.add(os.path.join(expt_folder,
+                            f'{args.backend}_eval_src_{source_env}_target_{target_env}.log'), rotation='500 KB')
     logger.info(f'Loading best f1 model for {source_env} audio.')
-    model_ckpt_folder_path = os.path.join(os.path.dirname(__file__),
-                                          'model_checkpoints', f'{hp.snr}-mono', hp.backends[0], expt_name)
+    model_ckpt_folder_path = expt_folder
     chkpt_path = os.path.join(model_ckpt_folder_path,
                               f"model-{source_env}-best-f1.ckpt")
     if not os.path.exists:
-        raise Exception(f'Not found: {chkpt_path}.')
+        raise Exception(f'Model checkpoint not found: {chkpt_path}.')
     model = LM.load_from_checkpoint(chkpt_path)
     logger.info(f'Loaded model checkpoint: {chkpt_path}')
     reference_files, estimated_files = generate_save_predictions(
@@ -45,7 +45,7 @@ def evaluate(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='For making realtime predictons.')
-    parser.add_argument('-en', '--expt_name', type=str, required=True)
+    parser.add_argument('-ef', '--expt_folder', type=str, required=True)
     parser.add_argument('-b', '--backend', type=str,
                         default=hp.backend, choices=hp.backends)
     parser.add_argument('-se', '--source_env', type=str, default=hp.source_env)

@@ -235,7 +235,7 @@ class VOICePANN(nn.Module):
             if not self.pann_output_embedding:
                 # pann will then output a 2d image/tensor: (batch_size, 1, height, width)
                 random_inp = torch.rand(
-                    (1, 1, self.input_height, self.input_width))
+                    (1, 1, self.input_height, 64))
                 output = self.pann(random_inp)
                 self.pann_output_height = output.size(2)
                 self.pann_output_width = output.size(3)
