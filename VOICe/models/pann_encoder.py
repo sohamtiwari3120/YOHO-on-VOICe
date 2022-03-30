@@ -275,8 +275,7 @@ class VOICePANN(nn.Module):
                 nn.Conv2d(in_channels=3,
                           out_channels=1,
                           kernel_size=(1, 1)
-                          ),
-                nn.Dropout(p = 0.2)
+                          )
             )
 
     def forward(self, input):
