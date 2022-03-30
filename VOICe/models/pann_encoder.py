@@ -286,7 +286,9 @@ class VOICePANN(nn.Module):
         if self.use_cbam:
             x = self.cbam(x)  # -> (batch_size, 64, num_frames, 1)
         x = x.transpose(1, 3)  # -> (batch_size, 1, num_frames, 64)
+        x = F.dropout(x, p=0.2, training=self.training)
         x = self.pann(x)
+        x = F.dropout(x, p=0.2, training=self.training)
         x = self.head(x)  # -> (batch_size, 3*num_classes)
         
         if self.pann_output_embedding:
