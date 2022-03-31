@@ -124,7 +124,7 @@ class hparams:
 
     # Adam Optimiser
     adam_eps = 1e-7
-    adam_weight_decay = 0.1
+    adam_weight_decay = 0.01
 
     # layer initializer
     initialize_layer: bool = True
