@@ -275,7 +275,8 @@ class VOICePANN(nn.Module):
                 nn.Conv2d(in_channels=3,
                           out_channels=1,
                           kernel_size=(1, 1)
-                          )
+                          ),
+                nn.Dropout(p = 0.2)
             )
 
     def forward(self, input):
@@ -286,7 +287,6 @@ class VOICePANN(nn.Module):
             x = self.cbam(x)  # -> (batch_size, 64, num_frames, 1)
         x = x.transpose(1, 3)  # -> (batch_size, 1, num_frames, 64)
         x = self.pann(x)
-        x = F.dropout(x, p=0.2, training=self.training)
         x = self.head(x)  # -> (batch_size, 3*num_classes)
         
         if self.pann_output_embedding:
