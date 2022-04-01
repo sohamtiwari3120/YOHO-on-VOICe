@@ -116,8 +116,8 @@ if __name__ == '__main__':
                         default=hp.model_name, choices=hp.models)
     parser.add_argument('-e', '--env', type=str, default=hp.env)
     parser.add_argument('-cp', '--chkpt_path', type=str, default=None)
-    parser.add_argument('-alr', '--auto_lr', type=bool, action='store_true')
-    parser.add_argument('-ms', '--model_summary', type=bool, action='store_true')
+    parser.add_argument('-alr', '--auto_lr', action='store_true')
+    parser.add_argument('-ms', '--model_summary', action='store_true')
 
     args = parser.parse_args()
     eval(args.backend)(args)
