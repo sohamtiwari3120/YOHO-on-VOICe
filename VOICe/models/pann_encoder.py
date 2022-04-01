@@ -287,7 +287,7 @@ class VOICePANN(nn.Module):
                         2048, 512, kernel_reduce_width_to_num_classes),
                     nn.ConvTranspose2d(in_channels=512,
                                        out_channels=256,
-                                       kernel_size=kernel_reduce_width_to_num_classes),
+                                       kernel_size=kernel_reduce_height_to_num_subwindows),
                     nn.Conv2d(in_channels=256,
                               out_channels=128,
                               kernel_size=(1, 1))
