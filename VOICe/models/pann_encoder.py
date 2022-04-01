@@ -214,7 +214,7 @@ class VOICePANN(nn.Module):
     def __init__(self,
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
-                 pann_encoder_ckpt_path: str = hp.pann_encoder_ckpt_path, use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
+                 pann_encoder_ckpt_path: str = hp.pann_encoder_ckpt_path_cnn10, use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  pann_output_embedding: bool = hp.output_embedding,
                  *args: Any, **kwargs: Any) -> None:
 

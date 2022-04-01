@@ -124,7 +124,7 @@ class hparams:
 
     # Adam Optimiser
     adam_eps = 1e-7
-    adam_weight_decay = 0.01
+    adam_weight_decay = 0
 
     # layer initializer
     initialize_layer: bool = True
@@ -140,7 +140,8 @@ class hparams:
     test_spec_transform = False
 
     # PANN
-    pann_encoder_ckpt_path = f'/notebooks/YOHO/YOHO-on-VOICe/VOICe/modelsmodels/Cnn10_mAP0.380.pth'
+    pann_encoder_ckpt_path_cnn10 = f'/notebooks/YOHO/YOHO-on-VOICe/VOICe/models/Cnn10_mAP0.380.pth'
+    pann_encoder_ckpt_path_cnn14 = f'/notebooks/YOHO/YOHO-on-VOICe/VOICe/models/Cnn14_mAP=0.431.pth'
     # CNN 10
     output_embedding: bool = False
 
