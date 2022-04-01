@@ -1,5 +1,6 @@
 from typing import Any, List, Optional, Tuple, Union
 import os
+from black import out
 import numpy as np
 import torch
 from torch import nn
@@ -54,6 +55,26 @@ def compute_conv_kernel_size(input_dim: int, output_dim: int, stride: int = 1, p
 
     kernel_size = (((output_dim - 1) * stride) + 1 - padding[0] - input_dim - padding[1])//(-dilation) + 1
 
+    return kernel_size
+
+def compute_kernel_size_auto(input_dim: int, output_dim: int) -> int:
+    """Given input and output lengths along a particular input dim, automatically selects whether to perform normal or transpose convolution and returns appropriate kernel size for the same.
+
+    Args:
+        input_dim (int): Length of the input along desired dim/axis
+        output_dim (int): Desired length of the output along desired dim/axis
+
+    Returns:
+        int: kernel size along desired dim/axis for either normal or transposed convolution.
+    """    
+    if input_dim == output_dim:
+        kernel_size = 1
+    elif input_dim < output_dim:
+        # need to perform transposed convolution
+        kernel_size = compute_conv_transpose_kernel_size(input_dim=input_dim, output_dim=output_dim)
+    else:
+        # need to perform normal convolution
+        kernel_size = compute_conv_kernel_size(input_dim=input_dim, output_dim=output_dim)
     return kernel_size
 
 def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:

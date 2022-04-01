@@ -4,9 +4,9 @@ from typing import Any
 import torch
 from torch import nn
 import torch.nn.functional as F
-from utils.torch_utils import compute_conv_transpose_kernel_size, compute_conv_kernel_size
+from utils.torch_utils import compute_kernel_size_auto
 from config import hparams
-import os
+import traceback
 from models.attention.CBAM import CBAMBlock
 
 __author__ = "Soham Tiwari"
@@ -108,7 +108,7 @@ class Cnn10(nn.Module):
         # 2. Or change bn0 to 128, but ideally avoid this step right
         # 3. Remove all intermediate layers between input and pann
 
-        x = input  # -> (batch_size, 1, time_steps, mel_bins)
+        x = input.unsqueeze(1)  # -> (batch_size, 1, time_steps, mel_bins)
         x = x.transpose(1, 3)   # -> (batch_size, mel_bins, time_steps, 1)
         x = self.bn0(x)         # -> (batch_size, mel_bins, time_steps, 1)
         x = x.transpose(1, 3)   # -> (batch_size, 1, time_steps, mel_bins)
@@ -155,10 +155,10 @@ class Cnn14(nn.Module):
 
     def forward(self, input, mixup_lambda=None):
 
-        x = input.unsqueeze(1)   # (batch_size, 1, time_steps, mel_bins)
-        x = x.transpose(1, 3)
-        x = self.bn0(x)
-        x = x.transpose(1, 3)
+        x = input.unsqueeze(1)  # -> (batch_size, 1, time_steps, mel_bins)
+        x = x.transpose(1, 3)   # -> (batch_size, mel_bins, time_steps, 1)
+        x = self.bn0(x)         # -> (batch_size, mel_bins, time_steps, 1)
+        x = x.transpose(1, 3)   # -> (batch_size, 1, time_steps, mel_bins)
 
         x = self.conv_block1(x, pool_size=(2, 2), pool_type='avg')
         x = F.dropout(x, p=0.2, training=self.training)
@@ -212,6 +212,7 @@ class VOICePANN(nn.Module):
     """
 
     def __init__(self,
+                 pann_version: str = hp.pann_version,
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
                  pann_encoder_ckpt_path: str = hp.pann_encoder_ckpt_path_cnn10, use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
@@ -219,6 +220,10 @@ class VOICePANN(nn.Module):
                  *args: Any, **kwargs: Any) -> None:
 
         super(VOICePANN, self).__init__(*args, **kwargs)
+        if pann_version not in hp.pann_versions:
+            raise Exception(
+                f'Invalid pann_version provided. Should be one of {hp.pann_versions}.')
+        self.pann_version = pann_version
         self.use_cbam = use_cbam
         if self.use_cbam:
             self.cbam = CBAMBlock(
@@ -229,23 +234,29 @@ class VOICePANN(nn.Module):
         self.pann_encoder_ckpt_path = pann_encoder_ckpt_path
         self.change_channels_to_64 = nn.Conv2d(self.input_width, 64, 1)
         self.pann_output_embedding = pann_output_embedding
-        self.pann = Cnn10(self.pann_output_embedding)
+        if self.pann_version == 'Cnn10':
+            self.pann: Cnn10 = Cnn10(self.pann_output_embedding)
+        elif self.pann_version == 'Cnn14':
+            self.pann: Cnn14 = Cnn14()
 
         with torch.no_grad():
             if not self.pann_output_embedding:
                 # pann will then output a 2d image/tensor: (batch_size, 1, height, width)
                 random_inp = torch.rand(
-                    (1, 1, self.input_height, 64))
+                    (1, self.input_height, 64))
                 output = self.pann(random_inp)
                 self.pann_output_height = output.size(2)
                 self.pann_output_width = output.size(3)
 
-        if os.path.exists(self.pann_encoder_ckpt_path):
+        try:
             self.pann.load_state_dict(torch.load(self.pann_encoder_ckpt_path)[
                                       'model'], strict=False)
             print(
-                f'loaded pann_cnn10 pretrained encoder state from {self.pann_encoder_ckpt_path}')
-                
+                f'SUCCESS: loaded pann_cnn10 pretrained encoder state from {self.pann_encoder_ckpt_path}')
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+
         if self.pann_output_embedding:
             self.head = nn.Sequential(
                 nn.Linear(512, 256),
@@ -257,26 +268,46 @@ class VOICePANN(nn.Module):
                 nn.Linear(64, 3*self.num_classes)
             )
         else:
-            kernel = (1, compute_conv_transpose_kernel_size(self.pann_output_width, 3*self.num_classes))
+            kernel_reduce_width_to_num_classes = (1, compute_kernel_size_auto(
+                self.pann_output_width, 3*self.num_classes))
+            kernel_reduce_height_to_num_subwindows = (compute_kernel_size_auto(
+                self.pann_output_height, hp.num_subwindows), 1)
+
+            if self.pann_version == 'Cnn10':
+                self.intermediate_layer = nn.Sequential(
+                    nn.ConvTranspose2d(
+                        512, 256, kernel_reduce_width_to_num_classes),
+                    nn.Conv2d(in_channels=256,
+                              out_channels=128,
+                              kernel_size=kernel_reduce_height_to_num_subwindows)
+                )
+            elif self.pann_version == 'Cnn14':
+                self.intermediate_layer = nn.Sequential(
+                    nn.ConvTranspose2d(
+                        2048, 512, kernel_reduce_width_to_num_classes),
+                    nn.ConvTranspose2d(in_channels=512,
+                                       out_channels=256,
+                                       kernel_size=kernel_reduce_width_to_num_classes),
+                    nn.Conv2d(in_channels=256,
+                              out_channels=128,
+                              kernel_size=(1, 1))
+                )
 
             self.head = nn.Sequential(
-                nn.ConvTranspose2d(512, 256, kernel),
-                nn.Conv2d(in_channels=256,
-                          out_channels=128,
-                          kernel_size=(compute_conv_kernel_size(self.pann_output_height, hp.num_subwindows), 1)),
+                self.intermediate_layer,
                 nn.Conv2d(in_channels=128,
                           out_channels=64,
                           kernel_size=(1, 1)),
-                nn.Dropout(p = 0.2),
+                nn.Dropout(p=0.2),
                 nn.Conv2d(in_channels=64,
                           out_channels=3,
                           kernel_size=(1, 1)),
-                nn.Dropout(p = 0.2),
+                nn.Dropout(p=0.2),
                 nn.Conv2d(in_channels=3,
                           out_channels=1,
                           kernel_size=(1, 1)
                           ),
-                nn.Dropout(p = 0.2)
+                nn.Dropout(p=0.2)
             )
 
     def forward(self, input):
@@ -286,12 +317,15 @@ class VOICePANN(nn.Module):
         if self.use_cbam:
             x = self.cbam(x)  # -> (batch_size, 64, num_frames, 1)
         x = x.transpose(1, 3)  # -> (batch_size, 1, num_frames, 64)
+        x = torch.squeeze(x, 1) # -> (batch_size, num_frames, 64)
         x = self.pann(x)
-        x = self.head(x)  # -> (batch_size, 3*num_classes)
-        
+        x = self.head(x)  # -> (batch_size, 1, num_subwindows, 3*num_classes)
+
         if self.pann_output_embedding:
-            x = torch.unsqueeze(x, dim=-2) # -> (batch_size, 1(=num_subwindows), 3*num_classes)
+            # -> (batch_size, 1(=num_subwindows), 3*num_classes)
+            x = torch.unsqueeze(x, dim=-2)
         else:
            # -> (batch_size, 1, num_subwindows, 3*num_classes)
-            x = torch.squeeze(x) # -> (batch_size, num_subwindows, 3*num_classes)
+            # -> (batch_size, num_subwindows, 3*num_classes)
+            x = torch.squeeze(x, 1)
         return x
