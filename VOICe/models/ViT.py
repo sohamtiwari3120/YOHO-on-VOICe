@@ -187,7 +187,7 @@ class VOICeViT(nn.Module):
             if not self.output_1d_embeddings:
                 # pann will then output a 2d image/tensor: (batch_size, 1, height, width)
                 random_inp = torch.rand(
-                    (1, self.input_height, self.input_width))
+                    (1, 1, self.input_height, self.input_width))
                 output = self.increase_channels_to_3_and_reduce_height(random_inp)
                 output = self.ViT(output)
                 self.vit_output_height = output.size(1)
