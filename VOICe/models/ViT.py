@@ -1,7 +1,7 @@
 from typing import Any
 import torch
 from torch import nn
-from VOICe.utils.torch_utils import compute_conv_kernel_size
+from utils.torch_utils import compute_conv_kernel_size
 from models.attention.CBAM import CBAMBlock
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
