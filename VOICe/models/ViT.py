@@ -195,8 +195,8 @@ class VOICeViT(nn.Module):
 
         if not self.output_1d_embeddings:
             self.head = nn.Sequential(
-                nn.Conv1d(self.vit_output_height, hp.num_subwindows, compute_conv_kernel_size(self.vit_output_width, self.vit_output_width/2)),
-                nn.Conv1d(hp.num_subwindows, hp.num_subwindows, compute_conv_kernel_size(self.vit_output_width/2, 3*self.num_classes))
+                nn.Conv1d(self.vit_output_height, hp.num_subwindows, compute_conv_kernel_size(self.vit_output_width, self.vit_output_width//2)),
+                nn.Conv1d(hp.num_subwindows, hp.num_subwindows, compute_conv_kernel_size(self.vit_output_width//2, 3*self.num_classes))
             )
         else:
             self.head = nn.Sequential(nn.Identity())

@@ -54,7 +54,7 @@ def compute_conv_kernel_size(input_dim: int, output_dim: int, stride: int = 1, p
 
     kernel_size = (((output_dim - 1) * stride) + 1 - padding[0] - input_dim - padding[1])//(-dilation) + 1
 
-    return kernel_size
+    return int(kernel_size)
 
 def compute_kernel_size_auto(input_dim: int, output_dim: int) -> int:
     """Given input and output lengths along a particular input dim, automatically selects whether to perform normal or transpose convolution and returns appropriate kernel size for the same.
@@ -74,7 +74,7 @@ def compute_kernel_size_auto(input_dim: int, output_dim: int) -> int:
     else:
         # need to perform normal convolution
         kernel_size = compute_conv_kernel_size(input_dim=input_dim, output_dim=output_dim)
-    return kernel_size
+    return int(kernel_size)
 
 def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:
     """Auxiliary function to help calculate the resulting dimension after performing the convolution operation.
