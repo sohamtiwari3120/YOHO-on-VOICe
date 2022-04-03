@@ -64,7 +64,7 @@ class hparams:
     backends = ['pytorch', 'tensor_flow']
     backend = backends[0]
 
-    models = ['Yoho', 'VOICeConvNeXt', 'VOICePANN']
+    models = ['Yoho', 'VOICeConvNeXt', 'VOICePANN', 'VOICeViT']
     model_name = models[0]
 
     # evaluate
@@ -152,3 +152,13 @@ class hparams:
     cbam_channels = 64
     cbam_reduction_factor = 4
     cbam_kernel_size = 7
+
+    # ViT
+    output_1d_embeddings = False
+    patch_size=8
+    dim=1024
+    depth=6
+    heads=16
+    mlp_dim=2048
+    vit_dropout=0.1
+    vit_emb_dropout=0.
