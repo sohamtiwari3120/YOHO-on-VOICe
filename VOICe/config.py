@@ -1,6 +1,20 @@
+from traceback import print_tb
 from dotenv import load_dotenv
 load_dotenv() #loading environment variables
+import os
+import sys
 
+def add_EAP_to_path():
+    """Function to add EAP - External-Attention-pytorch to the module's path.
+    """    
+    EAP_PATH = os.getenv('EAP_PATH')
+    if EAP_PATH is not None:
+        sys.path.insert(0, EAP_PATH)
+        return 1
+    else:
+        print('Error EAP_PATH not found in .env file.')
+        return 0
+        
 class hparams:
     # dataset metadata
     class_dict = {
