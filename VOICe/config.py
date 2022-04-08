@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv() #loading environment variables
+
 class hparams:
     # dataset metadata
     class_dict = {
