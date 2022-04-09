@@ -161,9 +161,7 @@ class VOICeViT(nn.Module):
 
         super(VOICeViT, self).__init__(*args, **kwargs)
         self.use_cbam = use_cbam
-        if self.use_cbam:
-            self.cbam = CBAMBlock(
-                channel=cbam_channels, reduction=cbam_reduction_factor, kernel_size=cbam_kernel_size)
+        
         self.num_classes = num_classes
         self.input_height = input_height
         self.input_width = input_width
@@ -193,6 +191,10 @@ class VOICeViT(nn.Module):
                 self.vit_output_height = output.size(1)
                 self.vit_output_width = output.size(2)
 
+        if self.use_cbam:
+            self.cbam = CBAMBlock(
+                channel=self.vit_output_height, reduction=cbam_reduction_factor, kernel_size=cbam_kernel_size)
+
         if not self.output_1d_embeddings:
             self.head = nn.Sequential(
                 nn.Conv1d(self.vit_output_height, hp.num_subwindows, compute_conv_kernel_size(self.vit_output_width, self.vit_output_width//2)),
@@ -205,5 +207,7 @@ class VOICeViT(nn.Module):
         x = input.float()  # -> (batch_size, 1, num_frames, n_mels)
         x = self.increase_channels_to_3_and_reduce_height(x)
         x = self.ViT(x)
+        if self.use_cbam:
+            x = self.cbam(x)
         x = self.head(x)
         return x
