@@ -44,7 +44,7 @@ def pytorch(args):
         model = LM.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
-        model = LM(eval(args.model_name)())
+        model = LM(eval(args.model_name)(use_cbam=args.use_cbam))
         logger.info(f'Starting a fresh model.')
 
     if args.model_summary:
@@ -119,6 +119,7 @@ if __name__ == '__main__':
     parser.add_argument('-cp', '--chkpt_path', type=str, default=None)
     parser.add_argument('-alr', '--auto_lr', action='store_true')
     parser.add_argument('-ms', '--model_summary', action='store_true')
+    parser.add_argument('-cbam', '--use_cbam', action='store_true')
 
     args = parser.parse_args()
     eval(args.backend)(args)
