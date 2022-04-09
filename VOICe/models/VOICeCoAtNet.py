@@ -34,7 +34,7 @@ class VOICeCoAtNet(nn.Module):
         with torch.no_grad():
             # pann will then output a 2d image/tensor: (batch_size, 1, height, width)
             random_inp = torch.rand(
-                (1, *(max(self.input_height, self.input_width),)*2))
+                (1, 1, *(max(self.input_height, self.input_width),)*2))
             output = self.cn(random_inp)
             self.cn_output_channels = output.size(1)
             self.cn_output_height_width = output.size(2)
