@@ -36,12 +36,12 @@ class VOICeCoAtNet(nn.Module):
             random_inp = torch.rand(
                 (1, *(max(self.input_height, self.input_width),)*2))
             output = self.cn(random_inp)
-            self.cn_output_height = output.size(1)
-            self.cn_output_width = output.size(2)
+            self.cn_output_channels = output.size(1)
+            self.cn_output_height_width = output.size(2)
 
         self.head = nn.Sequential(
-            nn.Conv1d(self.cn_output_height, hp.num_subwindows, compute_conv_kernel_size(
-                self.cn_output_width, 3*self.num_classes))
+            nn.Conv2d(self.cn_output_channels, 1, (compute_conv_kernel_size(self.cn_output_height_width, hp.num_subwindows), compute_conv_kernel_size(
+                self.cn_output_height_width, 3*self.num_classes)))
         )
 
     def forward(self, input):
@@ -49,4 +49,5 @@ class VOICeCoAtNet(nn.Module):
         x = self.make_input_square(x)
         x = self.cn(x)
         x = self.head(x)
+        x = torch.squeeze(x, 1)
         return x
