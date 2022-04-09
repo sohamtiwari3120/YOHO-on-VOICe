@@ -207,7 +207,9 @@ class VOICeViT(nn.Module):
         x = input.float()  # -> (batch_size, 1, num_frames, n_mels)
         x = self.increase_channels_to_3_and_reduce_height(x)
         x = self.ViT(x)
+        x = torch.unsqueeze(x, 2)
         if self.use_cbam:
             x = self.cbam(x)
+        x = torch.squeeze(x, 2)
         x = self.head(x)
         return x
