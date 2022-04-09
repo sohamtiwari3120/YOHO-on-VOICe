@@ -45,7 +45,7 @@ class VOICeCoAtNet(nn.Module):
         if self.use_cbam:
             self.cbam_reduction_factor: int = cbam_reduction_factor
             self.cbam_kernel_size: int = cbam_kernel_size
-            self.cbam = CBAMBlock(channel=self.cn_output_channels, reduction=self.cbam_reduction_factor, cbam_kernel_size=self.cbam_kernel_size)
+            self.cbam = CBAMBlock(channel=self.cn_output_channels, reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size)
 
         self.head = nn.Sequential(
             nn.Conv2d(self.cn_output_channels, 1, (compute_conv_kernel_size(self.cn_output_height_width, hp.num_subwindows), compute_conv_kernel_size(
