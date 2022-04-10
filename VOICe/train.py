@@ -45,8 +45,10 @@ def pytorch(args):
         model = LM.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
+        
         model = LM(eval(args.model_name)(use_cbam=args.use_cbam))
         logger.info(f'Starting a fresh model.')
+        logger.info(f'use_cbam = {args.use_cbam}')
 
     if args.model_summary:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
