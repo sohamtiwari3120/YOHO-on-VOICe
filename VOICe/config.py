@@ -31,7 +31,7 @@ class hparams:
     window_len_secs = 2.56
     hop_len_secs = 1.96
     max_consecutive_event_silence = 0.3
-    num_subwindows = 9
+    num_subwindows = 1
 
     # process_dataset
     save_logmelspec: bool = False
