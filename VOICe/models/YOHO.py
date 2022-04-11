@@ -3,6 +3,7 @@ from torch.nn import functional as F
 from torch import nn
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
+from models.attention.CBAM import CBAMBlock
 from config import hparams
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d
 
@@ -16,6 +17,7 @@ class Yoho(nn.Module):
                  depthwise_layers: depthwise_layers_type = hp.depthwise_layers,
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
+                 use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -27,7 +29,7 @@ class Yoho(nn.Module):
         output_height = self.input_height
 
         self.block_first = nn.Sequential(
-            InitializedKerv2d(1, 32, (3, 3), stride=2, bias=False),
+            InitializedConv2d(1, 32, (3, 3), stride=2, bias=False),
             InitializedBatchNorm2d(32, eps=1e-4),
             nn.ReLU()
         )
@@ -70,7 +72,7 @@ class Yoho(nn.Module):
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     nn.ReLU(),
-                    InitializedKerv2d(input_channels, output_channels,
+                    InitializedConv2d(input_channels, output_channels,
                                       (1, 1), 1, padding=0, bias=False),  # step 2
                     InitializedBatchNorm2d(output_channels, eps=1e-4),
                     nn.ReLU(),
