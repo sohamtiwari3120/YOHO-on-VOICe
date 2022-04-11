@@ -179,3 +179,10 @@ class hparams:
     mlp_dim=2048
     vit_dropout=0.1
     vit_emb_dropout=0.
+
+class YOHO_hparams(hparams):
+    # (NHWC) (-1, 129, 20, 32)
+    use_cbam = True
+    cbam_channels = 32
+    cbam_reduction_factor = 2
+    cbam_kernel_size = 3

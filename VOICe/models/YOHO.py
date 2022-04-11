@@ -1,13 +1,14 @@
+from matplotlib.style import use
 import torch
 from torch.nn import functional as F
 from torch import nn
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from models.attention.CBAM import CBAMBlock
-from config import hparams
+from config import YOHO_hparams
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d
 
-hp = hparams()
+hp = YOHO_hparams()
 
 class Yoho(nn.Module):
     """PyTorch Model for Yoho Algorithm
@@ -33,6 +34,14 @@ class Yoho(nn.Module):
             InitializedBatchNorm2d(32, eps=1e-4),
             nn.ReLU()
         )
+        self.use_cbam = use_cbam
+        if self.use_cbam:
+            self.cbam_channels: int = cbam_channels
+            self.cbam_reduction_factor: int = cbam_reduction_factor
+            self.cbam_kernel_size: int = cbam_kernel_size
+            self.cbam = CBAMBlock(
+                channel=self.cbam_channels, reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size)
+
         padding_left_right = compute_padding_along_dim(
             self.input_width, 3, 2, 'same')
         padding_top_bottom = compute_padding_along_dim(
@@ -100,6 +109,8 @@ class Yoho(nn.Module):
         x = input.float()
         x = F.pad(x, self.block_first_padding)
         x = self.block_first(x)
+        if self.use_cbam:
+            x = self.cbam(x)
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
             x = block(x)
