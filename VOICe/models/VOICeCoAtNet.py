@@ -35,8 +35,8 @@ class VOICeCoAtNet(nn.Module):
             self.make_input_square = nn.Identity()
             self.square_dim = self.input_width
 
-        self.increase_channels_to_3 = nn.Conv2d(1, 3, 1)
-        self.cn = CoAtNet((self.square_dim, self.square_dim), 3, num_blocks=[
+        self.increase_channels_to_3 = nn.Conv2d(1, 3, (2, 2))
+        self.cn = CoAtNet((self.square_dim-1, self.square_dim-1), 3, num_blocks=[
                           2, 2, 3, 5, 2], channels=[64, 96, 192, 384, 768], num_classes=3*hp.num_classes)
 
         # with torch.no_grad():
