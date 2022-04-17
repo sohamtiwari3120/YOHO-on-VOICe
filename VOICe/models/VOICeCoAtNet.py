@@ -38,7 +38,7 @@ class VOICeCoAtNet(nn.Module):
         self.increase_channels_to_3 = nn.Conv2d(1, 3, (2, 2))
         self.cn = CoAtNet((self.square_dim-1, self.square_dim-1), 3, num_blocks=[
                           2, 2, 3, 5, 2], channels=[64, 96, 192, 384, 768], num_classes=3*hp.num_classes)
-
+        self.increase_1d_channels = nn.Conv1d(1, 9, 1)
         # with torch.no_grad():
         #     # pann will then output a 2d image/tensor: (batch_size, 1, height, width)
         #     random_inp = torch.rand(
@@ -64,6 +64,7 @@ class VOICeCoAtNet(nn.Module):
         x = self.make_input_square(x)
         x = self.increase_channels_to_3(x)
         x = self.cn(x)
+        x = self.increase_1d_channels(x)
         # if self.use_cbam:
         #     x = self.cbam(x)
         # x = self.head(x)
