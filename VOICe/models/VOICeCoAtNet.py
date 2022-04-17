@@ -64,9 +64,9 @@ class VOICeCoAtNet(nn.Module):
         x = self.make_input_square(x)
         x = self.increase_channels_to_3(x)
         x = self.cn(x)
+        x = torch.unsqueeze(x, 1)
         x = self.increase_1d_channels(x)
         # if self.use_cbam:
         #     x = self.cbam(x)
         # x = self.head(x)
-        x = torch.unsqueeze(x, 1)
         return x
