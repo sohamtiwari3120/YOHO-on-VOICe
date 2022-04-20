@@ -4,10 +4,10 @@ import torch
 from torch import nn
 from utils.torch_utils import compute_conv_transpose_kernel_size, compute_conv_kernel_size
 from models.attention.CBAM import CBAMBlock
-from config import add_EAP_to_path, hparams
+from config import add_EAP_to_path, CoAtNet_hparams
 add_EAP_to_path()
 
-hp = hparams()
+hp = CoAtNet_hparams()
 
 
 class VOICeCoAtNet(nn.Module):
@@ -23,6 +23,7 @@ class VOICeCoAtNet(nn.Module):
         self.num_classes = num_classes
         self.input_height = input_height
         self.input_width = input_width
+
         if self.input_height > self.input_width:
             self.make_input_square = nn.ConvTranspose2d(
                 1, 1, (1, compute_conv_transpose_kernel_size(self.input_width, self.input_height)))
@@ -36,6 +37,14 @@ class VOICeCoAtNet(nn.Module):
             self.square_dim = self.input_width
 
         self.increase_channels_to_3 = nn.Conv2d(1, 3, (2, 2))
+
+        self.use_cbam = use_cbam
+        if self.use_cbam:
+            self.cbam_reduction_factor: int = cbam_reduction_factor
+            self.cbam_kernel_size: int = cbam_kernel_size
+            self.cbam = CBAMBlock(channel=3,
+                                  reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size)
+
         self.cn = CoAtNet((self.square_dim-1, self.square_dim-1), 3, num_blocks=[
                           2, 2, 3, 5, 2], channels=[64, 96, 192, 384, 768], num_classes=3*hp.num_classes)
         self.increase_1d_channels = nn.Conv1d(1, 9, 1)
@@ -47,12 +56,7 @@ class VOICeCoAtNet(nn.Module):
         #     self.cn_output_channels = output.size(1)
         #     self.cn_output_height_width = output.size(2)
 
-        # self.use_cbam = use_cbam
-        # if self.use_cbam:
-        #     self.cbam_reduction_factor: int = cbam_reduction_factor
-        #     self.cbam_kernel_size: int = cbam_kernel_size
-        #     self.cbam = CBAMBlock(channel=self.cn_output_channels,
-        #                           reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size)
+        
 
         # self.head = nn.Sequential(
         #     nn.Conv2d(self.cn_output_channels, 1, (compute_conv_kernel_size(self.cn_output_height_width, hp.num_subwindows), compute_conv_kernel_size(
@@ -63,10 +67,11 @@ class VOICeCoAtNet(nn.Module):
         x = input.float()
         x = self.make_input_square(x)
         x = self.increase_channels_to_3(x)
+        if self.use_cbam:
+            x = self.cbam(x)
         x = self.cn(x)
         x = torch.unsqueeze(x, 1)
         x = self.increase_1d_channels(x)
-        # if self.use_cbam:
-        #     x = self.cbam(x)
+        
         # x = self.head(x)
         return x
