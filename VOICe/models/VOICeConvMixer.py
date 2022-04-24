@@ -43,7 +43,7 @@ class VOICeConvMixer(nn.Module):
             self.cbam = CBAMBlock(channel=3,
                                   reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size)
 
-        self.cm = ConvMixer(dim=256, depth=10, kernel_size=9, patch_size=7, num_classes=hp.num_classes)
+        self.cm = ConvMixer(dim=256, depth=10, kernel_size=9, patch_size=7, num_classes=3*hp.num_classes)
         self.increase_1d_channels = nn.Conv1d(1, 9, 1)
 
     def forward(self, input):
