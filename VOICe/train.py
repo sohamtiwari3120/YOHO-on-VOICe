@@ -5,6 +5,7 @@ from models.VOICeConvNeXt import VOICeConvNeXt
 from models.pann_encoder import VOICePANN
 from models.ViT import VOICeViT
 from models.VOICeCoAtNet import VOICeCoAtNet
+from models.VOICeConvMixer import VOICeConvMixer
 from utils.data_utils import VOICeDataModule
 from pytorch_lightning import Trainer
 from pytorch_lightning import loggers as pl_loggers

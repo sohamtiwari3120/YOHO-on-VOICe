@@ -81,7 +81,7 @@ class hparams:
     backends = ['pytorch', 'tensor_flow']
     backend = backends[0]
 
-    models = ['Yoho', 'VOICeConvNeXt', 'VOICePANN', 'VOICeViT', 'VOICeCoAtNet']
+    models = ['Yoho', 'VOICeConvNeXt', 'VOICePANN', 'VOICeViT', 'VOICeCoAtNet', 'VOICeConvMixer']
     model_name = models[0]
 
     # evaluate
