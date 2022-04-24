@@ -10,6 +10,7 @@ from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim
 
 hp = YOHO_hparams()
 
+
 class Yoho(nn.Module):
     """PyTorch Model for Yoho Algorithm
     """
@@ -19,6 +20,7 @@ class Yoho(nn.Module):
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
+                 use_patches: bool = hp.use_patches,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -29,11 +31,19 @@ class Yoho(nn.Module):
         output_width = self.input_width
         output_height = self.input_height
 
-        self.block_first = nn.Sequential(
-            InitializedConv2d(1, 32, (3, 3), stride=2, bias=False),
-            InitializedBatchNorm2d(32, eps=1e-4),
-            nn.ReLU()
-        )
+        if self.use_patches:
+            self.block_first = nn.Sequential(
+                InitializedConv2d(1, 32, (3, 3), stride=3, bias=False), # making patches of input image
+                InitializedBatchNorm2d(32, eps=1e-4),
+                nn.ReLU()
+            )
+        else:
+            self.block_first = nn.Sequential(
+                InitializedConv2d(1, 32, (3, 3), stride=2, bias=False),
+                InitializedBatchNorm2d(32, eps=1e-4),
+                nn.ReLU()
+            )
+
         self.use_cbam = use_cbam
         if self.use_cbam:
             self.cbam_channels: int = cbam_channels
@@ -122,5 +132,3 @@ class Yoho(nn.Module):
         # Stored label output format: (N, L, C) = (N, num_subwindows, 3*num_classes)
         x = torch.permute(x, (0, 2, 1))
         return x
-
-

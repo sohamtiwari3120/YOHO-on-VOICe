@@ -187,6 +187,9 @@ class YOHO_hparams(hparams):
     cbam_reduction_factor = 2
     cbam_kernel_size = 3
 
+    # Patchify
+    use_patches = True
+
 class CoAtNet_hparams(hparams):
     # (NHWC) (-1, 129, 20, 32)
     use_cbam = True
