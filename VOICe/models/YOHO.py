@@ -30,7 +30,8 @@ class Yoho(nn.Module):
         self.input_width = input_width
         output_width = self.input_width
         output_height = self.input_height
-
+        
+        self.use_patches = use_patches
         if self.use_patches:
             self.block_first = nn.Sequential(
                 InitializedConv2d(1, 32, (3, 3), stride=3, bias=False), # making patches of input image
