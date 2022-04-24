@@ -116,6 +116,8 @@ class Yoho(nn.Module):
             InitializedConv1d(int(output_width * num_channels_last_depthwise),
                               3*self.num_classes, 1)
         )
+        if output_height != hp.num_subwindows:
+            self.make_dim_num_sw = nn.Conv1d(output_height, hp.num_subwindows, 1)
 
     def forward(self, input):
         x = input.float()
@@ -133,4 +135,6 @@ class Yoho(nn.Module):
         # Output: (N, C, L) = (N, 3*num_classes, num_subwindows)
         # Stored label output format: (N, L, C) = (N, num_subwindows, 3*num_classes)
         x = torch.permute(x, (0, 2, 1))
+        if height != hp.num_subwindows:
+            x = self.make_dim_num_sw(x)
         return x
