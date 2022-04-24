@@ -30,11 +30,12 @@ class Yoho(nn.Module):
         self.input_width = input_width
         output_width = self.input_width
         output_height = self.input_height
-        
+
         self.use_patches = use_patches
         if self.use_patches:
             self.block_first = nn.Sequential(
-                InitializedConv2d(1, 32, (3, 3), stride=3, bias=False), # making patches of input image
+                # making patches of input image
+                InitializedConv2d(1, 32, (3, 3), stride=3, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 nn.ReLU()
             )
@@ -62,9 +63,9 @@ class Yoho(nn.Module):
             padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1])
 
         output_width = compute_conv_output_dim(
-            output_width, kernel=3, stride=2, padding=padding_left_right)
+            output_width, kernel=3, stride=3 if self.use_patches else 2, padding=padding_left_right)
         output_height = compute_conv_output_dim(
-            output_height, kernel=3, stride=2, padding=padding_top_bottom)
+            output_height, kernel=3, stride=3 if self.use_patches else 2, padding=padding_top_bottom)
 
         self.blocks_depthwise = nn.ModuleList([])
         self.blocks_depthwise_padding: List[Tuple[int, int, int, int]] = []
