@@ -1,10 +1,12 @@
 from typing import Any
 import torch
+from utils.torch_utils import compute_conv_transpose_kernel_size
 from torch import nn
-from models.convnext import convnext_tiny
+from models.convnext import convnext_base
 from config import hparams
 
 hp = hparams()
+
 
 class VOICeConvNeXt(nn.Module):
     """ConvNeXt Model with output linear layer
@@ -20,7 +22,7 @@ class VOICeConvNeXt(nn.Module):
         self.input_height = input_height
         self.input_width = input_width
         self.convert_channels_to_3 = nn.Conv2d(1, 3, (1, 1))
-        self.convnext = convnext_tiny(False)
+        self.convnext = convnext_base(False)
         # output shape
         self.head = nn.Sequential(
             nn.Linear(1000, 512),
@@ -30,9 +32,19 @@ class VOICeConvNeXt(nn.Module):
             nn.Linear(256, 3*self.num_classes)
         )
 
+        self.increase_channels_to_num_sw = nn.Sequential(
+            nn.Conv1d(1, hp.num_subwindows, 1),
+            nn.ConvTranspose1d(
+                hp.num_subwindows, 4*hp.num_subwindows, 3),
+            nn.Conv1d(
+                4*hp.num_subwindows, hp.num_subwindows, 3)
+        )
+
     def forward(self, input):
         x = self.convert_channels_to_3(input.float())
         x = self.convnext(x)
-        x = self.head(x) # -> (batch_size, 3*num_classes)
-        x = torch.unsqueeze(x, dim=-2) # -> (batch_size, 1(=num_subwindows), 3*num_classes)
+        x = self.head(x)  # -> (batch_size, 3*num_classes)
+        # -> (batch_size, 1(=num_subwindows), 3*num_classes)
+        x = torch.unsqueeze(x, dim=-2)
+        x = self.increase_channels_to_num_sw(x)
         return x
