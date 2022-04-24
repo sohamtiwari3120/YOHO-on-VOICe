@@ -15,6 +15,7 @@ class VOICeConvNeXt(nn.Module):
     def __init__(self,
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
+                 use_cbam: bool = hp.use_cbam, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  *args: Any, **kwargs: Any) -> None:
 
         super(VOICeConvNeXt, self).__init__(*args, **kwargs)
