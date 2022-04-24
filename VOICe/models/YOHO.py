@@ -117,7 +117,7 @@ class Yoho(nn.Module):
                               3*self.num_classes, 1)
         )
         if output_height != hp.num_subwindows:
-            self.make_dim_num_sw = nn.Conv1d(output_height, hp.num_subwindows, 1)
+            self.make_dim_num_sw = nn.Conv1d(int(output_height), hp.num_subwindows, 1)
 
     def forward(self, input):
         x = input.float()
