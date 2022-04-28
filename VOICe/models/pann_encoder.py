@@ -440,7 +440,6 @@ class VOICePANNYoho(nn.Module):
         x = x.transpose(1, 3)  # -> (batch_size, 1, num_frames, 64)
         x = torch.squeeze(x, 1)  # -> (batch_size, num_frames, 64)
         x = self.pann(x)
-        print(x.shape)
         if self.pann_output_embedding:
             # -> (batch_size, 1(=num_subwindows), 3*num_classes)
             x = torch.unsqueeze(x, dim=-2)
