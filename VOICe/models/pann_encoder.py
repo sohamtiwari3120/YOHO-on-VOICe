@@ -4,7 +4,7 @@ from typing import Any
 import torch
 from torch import nn
 import torch.nn.functional as F
-from VOICe.models.YOHO import Yoho
+from models.YOHO import Yoho
 from utils.torch_utils import compute_kernel_size_auto
 from config import hparams
 import traceback

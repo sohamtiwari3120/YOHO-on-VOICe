@@ -2,7 +2,7 @@ import argparse
 from models.YOHO import Yoho
 from models.YOHO_tf import YohoTF
 from models.VOICeConvNeXt import VOICeConvNeXt
-from models.pann_encoder import VOICePANN
+from models.pann_encoder import VOICePANN, VOICePANNYoho
 from models.ViT import VOICeViT
 from models.VOICeCoAtNet import VOICeCoAtNet
 from models.VOICeConvMixer import VOICeConvMixer
