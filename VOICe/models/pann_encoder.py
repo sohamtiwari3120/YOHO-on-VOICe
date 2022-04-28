@@ -424,9 +424,6 @@ class VOICePANNYoho(nn.Module):
                           out_channels=64,
                           kernel_size=(1, 1)),
                 nn.Conv2d(in_channels=64,
-                          out_channels=3,
-                          kernel_size=(1, 1)),
-                nn.Conv2d(in_channels=3,
                           out_channels=1,
                           kernel_size=(1, 1)
                           )
@@ -443,13 +440,12 @@ class VOICePANNYoho(nn.Module):
         x = x.transpose(1, 3)  # -> (batch_size, 1, num_frames, 64)
         x = torch.squeeze(x, 1)  # -> (batch_size, num_frames, 64)
         x = self.pann(x)
-
+        print(x.shape)
         if self.pann_output_embedding:
             # -> (batch_size, 1(=num_subwindows), 3*num_classes)
             x = torch.unsqueeze(x, dim=-2)
         else:
             x = self.make_pann_op_yoho_compatible(x)
-            x = torch.squeeze(x, 1)
             # -> (batch_size, 1, num_subwindows, 3*num_classes)
             x = self.yoho(x)
 
