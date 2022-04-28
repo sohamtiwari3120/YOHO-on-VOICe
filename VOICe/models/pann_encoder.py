@@ -4,6 +4,7 @@ from typing import Any
 import torch
 from torch import nn
 import torch.nn.functional as F
+from VOICe.models.YOHO import Yoho
 from utils.torch_utils import compute_kernel_size_auto
 from config import hparams
 import traceback
@@ -122,15 +123,15 @@ class Cnn10(nn.Module):
         x = self.conv_block4(x, pool_size=(2, 2), pool_type='avg')
         # (batch_size, 512, T/16, mel_bins/16)
         x = F.dropout(x, p=0.2, training=self.training)
-        if self.output_embedding:
-            x = torch.mean(x, dim=3)
+        # if self.output_embedding:
+        #     x = torch.mean(x, dim=3)
 
-            (x1, _) = torch.max(x, dim=2)
-            x2 = torch.mean(x, dim=2)
-            x = x1 + x2
-            x = F.dropout(x, p=0.5, training=self.training)
-            x = F.relu_(self.fc1(x))
-            # embedding = F.dropout(x, p=0.5, training=self.training)
+        #     (x1, _) = torch.max(x, dim=2)
+        #     x2 = torch.mean(x, dim=2)
+        #     x = x1 + x2
+        #     x = F.dropout(x, p=0.5, training=self.training)
+        #     x = F.relu_(self.fc1(x))
+        #     # embedding = F.dropout(x, p=0.5, training=self.training)
         return x
 
 
@@ -317,7 +318,7 @@ class VOICePANN(nn.Module):
         if self.use_cbam:
             x = self.cbam(x)  # -> (batch_size, 64, num_frames, 1)
         x = x.transpose(1, 3)  # -> (batch_size, 1, num_frames, 64)
-        x = torch.squeeze(x, 1) # -> (batch_size, num_frames, 64)
+        x = torch.squeeze(x, 1)  # -> (batch_size, num_frames, 64)
         x = self.pann(x)
         x = self.head(x)  # -> (batch_size, 1, num_subwindows, 3*num_classes)
 
@@ -328,4 +329,128 @@ class VOICePANN(nn.Module):
            # -> (batch_size, 1, num_subwindows, 3*num_classes)
             # -> (batch_size, num_subwindows, 3*num_classes)
             x = torch.squeeze(x, 1)
+        return x
+
+
+class VOICePANNYoho(nn.Module):
+    """ConvNeXt Model with output linear layer
+    """
+
+    def __init__(self,
+                 pann_version: str = hp.pann_version,
+                 num_classes: int = hp.num_classes,
+                 input_height: int = hp.input_height, input_width: int = hp.input_width,
+                 pann_encoder_ckpt_path: str = hp.pann_encoder_ckpt_path_cnn10, use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
+                 *args: Any, **kwargs: Any) -> None:
+
+        super(VOICePANNYoho, self).__init__(*args, **kwargs)
+        if pann_version not in hp.pann_versions:
+            raise Exception(
+                f'Invalid pann_version provided. Should be one of {hp.pann_versions}.')
+        self.pann_version = pann_version
+        self.use_cbam = use_cbam
+        if self.use_cbam:
+            self.cbam = CBAMBlock(
+                channel=cbam_channels, reduction=cbam_reduction_factor, kernel_size=cbam_kernel_size)
+        self.num_classes = num_classes
+        self.input_height = input_height
+        self.input_width = input_width
+        self.pann_encoder_ckpt_path = pann_encoder_ckpt_path
+        self.change_channels_to_64 = nn.Conv2d(self.input_width, 64, 1)
+        self.pann_output_embedding = False
+        if self.pann_version == 'Cnn10':
+            self.pann: Cnn10 = Cnn10(pann_output_embedding)
+        elif self.pann_version == 'Cnn14':
+            self.pann: Cnn14 = Cnn14()
+
+        with torch.no_grad():
+            if not self.pann_output_embedding:
+                # pann will then output a 2d image/tensor: (batch_size, 1, height, width)
+                random_inp = torch.rand(
+                    (1, self.input_height, 64))
+                output = self.pann(random_inp)
+                self.pann_batch_size = output.size(1)
+                self.pann_output_height = output.size(2)
+                self.pann_output_width = output.size(3)
+
+        try:
+            self.pann.load_state_dict(torch.load(self.pann_encoder_ckpt_path)[
+                                      'model'], strict=False)
+            print(
+                f'SUCCESS: loaded pann {self.pann_version} pretrained encoder state from {self.pann_encoder_ckpt_path}')
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+
+        if self.pann_output_embedding:
+            self.head = nn.Sequential(
+                nn.Linear(512, 256),
+                nn.GELU(),
+                nn.Linear(256, 128),
+                nn.GELU(),
+                nn.Linear(128, 64),
+                nn.GELU(),
+                nn.Linear(64, 3*self.num_classes)
+            )
+        else:
+            kernel_reduce_width_to_num_classes = (1, compute_kernel_size_auto(
+                self.pann_output_width, hp.input_width))
+            kernel_reduce_height_to_num_subwindows = (compute_kernel_size_auto(
+                self.pann_output_height, hp.input_height), 1)
+
+            if self.pann_version == 'Cnn10':
+                self.intermediate_layer = nn.Sequential(
+                    nn.ConvTranspose2d(
+                        512, 256, kernel_reduce_width_to_num_classes),
+                    nn.Conv2d(in_channels=256,
+                              out_channels=128,
+                              kernel_size=kernel_reduce_height_to_num_subwindows)
+                )
+            elif self.pann_version == 'Cnn14':
+                self.intermediate_layer = nn.Sequential(
+                    nn.ConvTranspose2d(
+                        2048, 512, kernel_reduce_width_to_num_classes),
+                    nn.ConvTranspose2d(in_channels=512,
+                                       out_channels=256,
+                                       kernel_size=kernel_reduce_height_to_num_subwindows),
+                    nn.Conv2d(in_channels=256,
+                              out_channels=128,
+                              kernel_size=(1, 1))
+                )
+
+            self.make_pann_op_yoho_compatible = nn.Sequential(
+                self.intermediate_layer,
+                nn.Conv2d(in_channels=128,
+                          out_channels=64,
+                          kernel_size=(1, 1)),
+                nn.Conv2d(in_channels=64,
+                          out_channels=3,
+                          kernel_size=(1, 1)),
+                nn.Conv2d(in_channels=3,
+                          out_channels=1,
+                          kernel_size=(1, 1)
+                          )
+            )  # -> (batch_size, 1,  257, 40)
+
+        self.yoho = Yoho()
+
+    def forward(self, input):
+        x = input.float()  # -> (batch_size, 1, num_frames, n_mels)
+        x = x.transpose(1, 3)  # -> (batch_size, n_mels, num_frames, 1)
+        x = self.change_channels_to_64(x)  # -> (batch_size, 64, num_frames, 1)
+        if self.use_cbam:
+            x = self.cbam(x)  # -> (batch_size, 64, num_frames, 1)
+        x = x.transpose(1, 3)  # -> (batch_size, 1, num_frames, 64)
+        x = torch.squeeze(x, 1)  # -> (batch_size, num_frames, 64)
+        x = self.pann(x)
+
+        if self.pann_output_embedding:
+            # -> (batch_size, 1(=num_subwindows), 3*num_classes)
+            x = torch.unsqueeze(x, dim=-2)
+        else:
+            x = self.make_pann_op_yoho_compatible(x)
+            x = torch.squeeze(x, 1)
+            # -> (batch_size, 1, num_subwindows, 3*num_classes)
+            x = self.yoho(x)
+
         return x

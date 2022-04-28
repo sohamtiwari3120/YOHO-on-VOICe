@@ -81,7 +81,7 @@ class hparams:
     backends = ['pytorch', 'tensor_flow']
     backend = backends[0]
 
-    models = ['Yoho', 'VOICeConvNeXt', 'VOICePANN', 'VOICeViT', 'VOICeCoAtNet', 'VOICeConvMixer']
+    models = ['Yoho', 'VOICeConvNeXt', 'VOICePANN', 'VOICeViT', 'VOICeCoAtNet', 'VOICeConvMixer', 'VOICePANNYoho']
     model_name = models[0]
 
     # evaluate
@@ -182,13 +182,13 @@ class hparams:
 
 class YOHO_hparams(hparams):
     # (NHWC) (-1, 129, 20, 32)
-    use_cbam = True
+    use_cbam = False
     cbam_channels = 32
     cbam_reduction_factor = 2
     cbam_kernel_size = 3
 
     # Patchify
-    use_patches = True
+    use_patches = False
 
 class CoAtNet_hparams(hparams):
     # (NHWC) (-1, 129, 20, 32)
