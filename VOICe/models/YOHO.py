@@ -75,9 +75,7 @@ class Yoho(nn.Module):
         if self.use_ufo:
             self.ufo = UFOAttention(d_model=int(output_height), d_k=hp.ufo_d_k, d_v=hp.ufo_d_v, h=hp.ufo_h)
 
-        self.use_pna = use_pna
-        if self.use_pna:
-            self.pna = ParNetAttention(channel=hp.pna_channels)
+        
 
         self.blocks_depthwise = nn.ModuleList([])
         self.blocks_depthwise_padding: List[Tuple[int, int, int, int]] = []
@@ -124,6 +122,9 @@ class Yoho(nn.Module):
 
         # (batch_size, num_channels, height, width)
         num_channels_last_depthwise = self.depthwise_layers[-1][-1]
+        self.use_pna = use_pna
+        if self.use_pna:
+            self.pna = ParNetAttention(channel=num_channels_last_depthwise)
         self.block_final = nn.Sequential(
             InitializedConv1d(int(output_width * num_channels_last_depthwise),
                               3*self.num_classes, 1)
@@ -139,11 +140,14 @@ class Yoho(nn.Module):
             x = self.cbam(x)
         # if self.use_ufo:
         #     x = self.ufo(x)
-        if self.use_pna:
-            x = self.pna(x)
+
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
             x = block(x)
+
+        if self.use_pna:
+            x = self.pna(x)
+            
         batch_size, channels, height, width = x.size()
         x = torch.permute(x, (0, 1, 3, 2)).reshape(
             batch_size, channels*width, height)
