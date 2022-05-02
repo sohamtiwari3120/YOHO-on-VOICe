@@ -72,7 +72,7 @@ class Yoho(nn.Module):
                 
         self.use_ufo = use_ufo
         if self.use_ufo:
-            self.ufo = UFOAttention(d_model=output_height, d_k=hp.ufo_d_k, d_v=hp.ufo_d_v, h=hp.ufo_h)
+            self.ufo = UFOAttention(d_model=int(output_height), d_k=hp.ufo_d_k, d_v=hp.ufo_d_v, h=hp.ufo_h)
 
         self.blocks_depthwise = nn.ModuleList([])
         self.blocks_depthwise_padding: List[Tuple[int, int, int, int]] = []
