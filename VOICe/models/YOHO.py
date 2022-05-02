@@ -1,3 +1,6 @@
+from model.attention.MobileViTAttention import MobileViTAttention
+from model.attention.ParNetAttention import *
+from model.attention.UFOAttention import *
 from audioop import add
 from matplotlib.style import use
 import torch
@@ -9,8 +12,6 @@ from models.attention.CBAM import CBAMBlock
 from config import YOHO_hparams, add_EAP_to_path
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d
 add_EAP_to_path()
-from model.attention.UFOAttention import *
-from model.attention.ParNetAttention import *
 hp = YOHO_hparams()
 
 
@@ -23,7 +24,7 @@ class Yoho(nn.Module):
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
-                 use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna,
+                 use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -57,6 +58,11 @@ class Yoho(nn.Module):
             self.cbam = CBAMBlock(
                 channel=self.cbam_channels, reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size)
 
+        self.use_mva = use_mva
+        if self.use_mva:
+            self.mva = MobileViTAttention(in_channel=hp.mva_in_channel, dim=hp.mva_dim,
+                                          kernel_size=hp.mva_kernel_size, patch_size=hp.mva_patch_size)
+
         padding_left_right = compute_padding_along_dim(
             self.input_width, 3, 2, 'same')
         padding_top_bottom = compute_padding_along_dim(
@@ -70,12 +76,10 @@ class Yoho(nn.Module):
         output_height = compute_conv_output_dim(
             output_height, kernel=3, stride=3 if self.use_patches else 2, padding=padding_top_bottom)
 
-                
         self.use_ufo = use_ufo
         if self.use_ufo:
-            self.ufo = UFOAttention(d_model=int(output_height), d_k=hp.ufo_d_k, d_v=hp.ufo_d_v, h=hp.ufo_h)
-
-        
+            self.ufo = UFOAttention(d_model=int(
+                output_height), d_k=hp.ufo_d_k, d_v=hp.ufo_d_v, h=hp.ufo_h)
 
         self.blocks_depthwise = nn.ModuleList([])
         self.blocks_depthwise_padding: List[Tuple[int, int, int, int]] = []
@@ -130,7 +134,8 @@ class Yoho(nn.Module):
                               3*self.num_classes, 1)
         )
         if output_height != hp.num_subwindows:
-            self.make_dim_num_sw = nn.Conv1d(int(output_height), hp.num_subwindows, 1)
+            self.make_dim_num_sw = nn.Conv1d(
+                int(output_height), hp.num_subwindows, 1)
 
     def forward(self, input):
         x = input.float()
@@ -140,6 +145,8 @@ class Yoho(nn.Module):
             x = self.cbam(x)
         # if self.use_ufo:
         #     x = self.ufo(x)
+        if self.use_mva:
+            x = self.mva(x)
 
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
@@ -147,7 +154,7 @@ class Yoho(nn.Module):
 
         if self.use_pna:
             x = self.pna(x)
-            
+
         batch_size, channels, height, width = x.size()
         x = torch.permute(x, (0, 1, 3, 2)).reshape(
             batch_size, channels*width, height)

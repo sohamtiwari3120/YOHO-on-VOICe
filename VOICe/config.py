@@ -200,6 +200,14 @@ class YOHO_hparams(hparams):
     use_pna = True
     pna_channels = 32
 
+    # MobileViT Attention Usage
+    use_mva = True
+    mva_in_channel=32
+    mva_dim=512
+    mva_kernel_size=3
+    mva_patch_size=7
+
+
 class CoAtNet_hparams(hparams):
     # (NHWC) (-1, 129, 20, 32)
     use_cbam = True
