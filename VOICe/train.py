@@ -28,9 +28,10 @@ def pytorch(args):
     env = args.env
     expt_name = args.expt_name
     date_today = datetime.today().strftime('%d%m%Y')
-    tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
-        os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
-
+    # tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
+    #     os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
+    wandb_logger = pl_loggers.WandbLogger(project='YOHO-on-VOICe', name=f"{date_today}/{expt_name}")
+    wandb_logger.experiment.config.update(args)
     expt_folder = os.path.join(os.path.dirname(__file__),
                                'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', date_today, expt_name)
     if not os.path.exists(expt_folder):
@@ -57,7 +58,7 @@ def pytorch(args):
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     trainer = Trainer(callbacks=[MonitorSedF1Callback(
-        env, expt_folder), lr_monitor], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=tb_logger, profiler='simple')
+        env, expt_folder), lr_monitor], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=wandb_logger, profiler='simple')
     voice_dm = VOICeDataModule(env)
 
     if args.auto_lr:
