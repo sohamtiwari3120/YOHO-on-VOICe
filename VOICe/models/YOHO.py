@@ -1,3 +1,4 @@
+from audioop import add
 from matplotlib.style import use
 import torch
 from torch.nn import functional as F
@@ -5,9 +6,10 @@ from torch import nn
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from models.attention.CBAM import CBAMBlock
-from config import YOHO_hparams
+from config import YOHO_hparams, add_EAP_to_path
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d
-
+add_EAP_to_path()
+from model.attention.UFOAttention import *
 hp = YOHO_hparams()
 
 
@@ -20,7 +22,7 @@ class Yoho(nn.Module):
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
-                 use_patches: bool = hp.use_patches,
+                 use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -66,6 +68,11 @@ class Yoho(nn.Module):
             output_width, kernel=3, stride=3 if self.use_patches else 2, padding=padding_left_right)
         output_height = compute_conv_output_dim(
             output_height, kernel=3, stride=3 if self.use_patches else 2, padding=padding_top_bottom)
+
+                
+        self.use_ufo = use_ufo
+        if self.use_ufo:
+            self.ufo = UFOAttention(d_model=output_height, d_k=hp.ufo_d_k, d_v=hp.ufo_d_v, h=hp.ufo_h)
 
         self.blocks_depthwise = nn.ModuleList([])
         self.blocks_depthwise_padding: List[Tuple[int, int, int, int]] = []
@@ -125,6 +132,8 @@ class Yoho(nn.Module):
         x = self.block_first(x)
         if self.use_cbam:
             x = self.cbam(x)
+        if self.use_ufo:
+            x = self.ufo(x)
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
             x = block(x)

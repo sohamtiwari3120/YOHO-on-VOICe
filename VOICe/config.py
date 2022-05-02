@@ -190,6 +190,12 @@ class YOHO_hparams(hparams):
     # Patchify
     use_patches = False
 
+    # UFO Attention
+    use_ufo = True
+    ufo_d_k=512
+    ufo_d_v=512
+    ufo_h=8
+
 class CoAtNet_hparams(hparams):
     # (NHWC) (-1, 129, 20, 32)
     use_cbam = True
