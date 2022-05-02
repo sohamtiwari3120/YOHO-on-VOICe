@@ -52,6 +52,8 @@ def pytorch(args):
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
 
+    wandb_logger.watch(model)
+
     if args.model_summary:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         summary(model.to(device), (1, hp.input_height, hp.input_width))
