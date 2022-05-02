@@ -10,6 +10,7 @@ from config import YOHO_hparams, add_EAP_to_path
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d
 add_EAP_to_path()
 from model.attention.UFOAttention import *
+from model.attention.ParNetAttention import *
 hp = YOHO_hparams()
 
 
@@ -22,7 +23,7 @@ class Yoho(nn.Module):
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
-                 use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo,
+                 use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -73,6 +74,10 @@ class Yoho(nn.Module):
         self.use_ufo = use_ufo
         if self.use_ufo:
             self.ufo = UFOAttention(d_model=int(output_height), d_k=hp.ufo_d_k, d_v=hp.ufo_d_v, h=hp.ufo_h)
+
+        self.use_pna = use_pna
+        if self.use_pna:
+            self.pna = ParNetAttention(channel=hp.pna_channels)
 
         self.blocks_depthwise = nn.ModuleList([])
         self.blocks_depthwise_padding: List[Tuple[int, int, int, int]] = []
@@ -132,8 +137,10 @@ class Yoho(nn.Module):
         x = self.block_first(x)
         if self.use_cbam:
             x = self.cbam(x)
-        if self.use_ufo:
-            x = self.ufo(x)
+        # if self.use_ufo:
+        #     x = self.ufo(x)
+        if self.use_pna:
+            x = self.pna(x)
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
             x = block(x)

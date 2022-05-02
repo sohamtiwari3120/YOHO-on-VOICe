@@ -196,6 +196,10 @@ class YOHO_hparams(hparams):
     ufo_d_v=512
     ufo_h=8
 
+    # ParNet Attention Usage
+    use_pna = True
+    pna_channels = 32
+
 class CoAtNet_hparams(hparams):
     # (NHWC) (-1, 129, 20, 32)
     use_cbam = True
