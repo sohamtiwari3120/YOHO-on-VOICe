@@ -1,4 +1,22 @@
 import argparse
+from torchsummary import summary
+import torch
+import os
+from datetime import datetime
+from loguru import logger
+from pytorch_lightning import Trainer, seed_everything
+from pytorch_lightning import loggers as pl_loggers
+from pytorch_lightning.callbacks import LearningRateMonitor
+from config import hparams
+
+hp = hparams()
+seed = hp.seed
+torch.use_deterministic_algorithms(True)
+seed_everything(seed, workers=True)
+
+from utils.torch_utils import MonitorSedF1Callback
+from utils.tf_utils import DataGenerator, my_loss_fn
+from utils.pl_utils import LM
 from models.YOHO import Yoho
 from models.YOHO_tf import YohoTF
 from models.VOICeConvNeXt import VOICeConvNeXt
@@ -7,29 +25,7 @@ from models.ViT import VOICeViT
 from models.VOICeCoAtNet import VOICeCoAtNet
 from models.VOICeConvMixer import VOICeConvMixer
 from utils.data_utils import VOICeDataModule
-from pytorch_lightning import Trainer, seed_everything
-from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.callbacks import LearningRateMonitor
-from utils.torch_utils import MonitorSedF1Callback
-from utils.tf_utils import DataGenerator, my_loss_fn
-from utils.pl_utils import LM
-from loguru import logger
-from config import hparams
-from torchsummary import summary
-import torch
-import os
-from datetime import datetime
-import random
-import numpy as np
 
-hp = hparams()
-seed = hp.seed
-torch.manual_seed(seed)
-random.seed(seed)
-np.random.seed(seed)
-torch.use_deterministic_algorithms(True)
-
-seed_everything(seed, workers=True)
 
 @logger.catch
 def pytorch(args):
