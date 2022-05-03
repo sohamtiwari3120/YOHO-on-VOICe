@@ -51,19 +51,6 @@ class Yoho(nn.Module):
                 nn.ReLU()
             )
 
-        self.use_cbam = use_cbam
-        if self.use_cbam:
-            self.cbam_channels: int = cbam_channels
-            self.cbam_reduction_factor: int = cbam_reduction_factor
-            self.cbam_kernel_size: int = cbam_kernel_size
-            self.cbam = CBAMBlock(
-                channel=self.cbam_channels, reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size)
-
-        self.use_mva = use_mva
-        if self.use_mva:
-            self.mva = MobileViTAttention(in_channel=hp.mva_in_channel, dim=hp.mva_dim,
-                                          kernel_size=hp.mva_kernel_size, patch_size=hp.mva_patch_size)
-
         padding_left_right = compute_padding_along_dim(
             self.input_width, 3, 2, 'same')
         padding_top_bottom = compute_padding_along_dim(
@@ -77,6 +64,24 @@ class Yoho(nn.Module):
         output_height = compute_conv_output_dim(
             output_height, kernel=3, stride=3 if self.use_patches else 2, padding=padding_top_bottom)
 
+        self.use_cbam = use_cbam
+        if self.use_cbam:
+            self.cbam_channels: int = cbam_channels
+            self.cbam_reduction_factor: int = cbam_reduction_factor
+            self.cbam_kernel_size: int = cbam_kernel_size
+            self.cbam = CBAMBlock(
+                channel=self.cbam_channels, reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size)
+
+        self.use_mva = use_mva
+        if self.use_mva:
+            self.mva = MobileViTAttention(in_channel=hp.mva_in_channel, dim=hp.mva_dim,
+                                          kernel_size=hp.mva_kernel_size, patch_size=hp.mva_patch_size)
+
+        self.use_pna = use_pna
+        if self.use_pna:
+            self.pna_first = ParNetAttention(channel=32)
+
+        
         self.use_ufo = use_ufo
         if self.use_ufo:
             self.ufo = UFOAttention(d_model=int(
@@ -112,7 +117,8 @@ class Yoho(nn.Module):
                                       (1, 1), 1, padding=0, bias=False),  # step 2
                     InitializedBatchNorm2d(output_channels, eps=1e-4),
                     nn.ReLU(),
-                    nn.Dropout2d(0.1)
+                    nn.Dropout2d(0.1),
+                    ParNetAttention(channel=output_channels) if self.use_pna else nn.Identity()
                 )
             )
             # for step 1:
@@ -127,9 +133,7 @@ class Yoho(nn.Module):
 
         # (batch_size, num_channels, height, width)
         num_channels_last_depthwise = self.depthwise_layers[-1][-1]
-        self.use_pna = use_pna
-        if self.use_pna:
-            self.pna = ParNetAttention(channel=num_channels_last_depthwise)
+
         self.block_final = nn.Sequential(
             InitializedConv1d(int(output_width * num_channels_last_depthwise),
                               3*self.num_classes, 1)
