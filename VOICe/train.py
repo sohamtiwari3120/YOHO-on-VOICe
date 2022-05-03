@@ -48,9 +48,10 @@ def pytorch(args):
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
         
-        model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna))
+        model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna, use_ufo = args.use_ufo, use_mva = args.use_mva))
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
+        logger.info(vars(args))
 
     wandb_logger.watch(model)
 
@@ -128,6 +129,8 @@ if __name__ == '__main__':
     parser.add_argument('-ms', '--model_summary', action='store_true')
     parser.add_argument('-cbam', '--use_cbam', action='store_true')
     parser.add_argument('-pna', '--use_pna', action='store_true')
+    parser.add_argument('-ufo', '--use_ufo', action='store_true')
+    parser.add_argument('-mva', '--use_mva', action='store_true')
 
     args = parser.parse_args()
     eval(args.backend)(args)
