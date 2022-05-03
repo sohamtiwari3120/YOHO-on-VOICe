@@ -205,7 +205,7 @@ class YOHO_hparams(hparams):
     mva_in_channel=32
     mva_dim=512
     mva_kernel_size=3
-    mva_patch_size=7
+    mva_patch_size=3
 
 
 class CoAtNet_hparams(hparams):
