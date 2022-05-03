@@ -19,9 +19,15 @@ from torchsummary import summary
 import torch
 import os
 from datetime import datetime
+import random
+import numpy as np
 
 hp = hparams()
-
+seed = hp.seed
+torch.manual_seed(seed)
+random.seed(seed)
+np.random.seed(seed)
+torch.use_deterministic_algorithms(True)
 
 @logger.catch
 def pytorch(args):
@@ -31,6 +37,7 @@ def pytorch(args):
     # tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
     #     os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
     wandb_logger = pl_loggers.WandbLogger(project='YOHO-on-VOICe', name=f"{date_today}/{expt_name}")
+    wandb_logger.experiment.config.update(hp)
     wandb_logger.experiment.config.update(args)
     expt_folder = os.path.join(os.path.dirname(__file__),
                                'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', date_today, expt_name)

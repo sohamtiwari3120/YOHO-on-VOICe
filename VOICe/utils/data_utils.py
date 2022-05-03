@@ -7,6 +7,7 @@ from typing import List, Optional, Tuple
 import soundfile as sf
 import math
 import numpy as np
+import random
 import os
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -506,7 +507,9 @@ class VOICeDataModule(pl.LightningDataModule):
         self.val_spec_transform = val_spec_transform
         self.test_spec_transform = test_spec_transform
 
-        self.num_workers = num_workers
+        self., generator=self.g, num_workers = num_workerworker_init_fn=seed_workers
+        self.g = torch.Generator()
+        self.g.manual_seed(hp.seed)
 
     def setup(self, stage: Optional[str] = None):
 
@@ -521,12 +524,17 @@ class VOICeDataModule(pl.LightningDataModule):
         if stage == "test" or stage is None:
             self.voice_test = VOICeDataset(
                 'test', self.env, self.test_spec_transform)
+                
+    def seed_worker(self, worker_id):
+        worker_seed = torch.initial_seed() % 2**32
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)    
 
     def train_dataloader(self):
-        return DataLoader(self.voice_train, batch_size=self.batch_size, shuffle=self.train_shuffle, num_workers=self.num_workers)
+        return DataLoader(self.voice_train, batch_size=self.batch_size, shuffle=self.train_shuffle, num_workers=self.num_workers, generator=self.g, worker_init_fn=self.seed_worker)
 
     def val_dataloader(self):
-        return DataLoader(self.voice_val, batch_size=self.batch_size, shuffle=self.val_shuffle, num_workers=self.num_workers)
+        return DataLoader(self.voice_val, batch_size=self.batch_size, shuffle=self.val_shuffle, num_workers=self.num_workers, generator=self.g, worker_init_fn=self.seed_worker)
 
     def test_dataloader(self):
-        return DataLoader(self.voice_test, batch_size=self.batch_size, shuffle=self.test_shuffle, num_workers=self.num_workers)
+        return DataLoader(self.voice_test, batch_size=self.batch_size, shuffle=self.test_shuffle, num_workers=self.num_workers, generator=self.g, worker_init_fn=self.seed_worker)

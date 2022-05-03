@@ -16,6 +16,7 @@ def add_EAP_to_path():
         return 0
         
 class hparams:
+    seed = 0
     # dataset metadata
     class_dict = {
         "babycry": 0,
