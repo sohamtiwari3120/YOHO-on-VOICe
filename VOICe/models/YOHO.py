@@ -150,7 +150,7 @@ class Yoho(nn.Module):
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
             x = block(x)
-            if i==0 and self.use_mva:
+            if i==1 and self.use_mva:
                 x = self.mva(x)
 
 
