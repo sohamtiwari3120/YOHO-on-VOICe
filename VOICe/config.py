@@ -202,7 +202,7 @@ class YOHO_hparams(hparams):
 
     # MobileViT Attention Usage
     use_mva = True
-    mva_in_channel=32
+    mva_in_channel=64
     mva_dim=512
     mva_kernel_size=3
     mva_patch_size=5
