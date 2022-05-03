@@ -35,8 +35,8 @@ def pytorch(args):
     # tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
     #     os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
     wandb_logger = pl_loggers.WandbLogger(project='YOHO-on-VOICe', name=f"{date_today}/{expt_name}")
-    wandb_logger.experiment.config.update(hp.__dict__)
-    wandb_logger.experiment.config.update(args)
+    wandb_logger.experiment.config.update(hp.__dict__, allow_val_change=True)
+    wandb_logger.experiment.config.update(args, allow_val_change=True)
     expt_folder = os.path.join(os.path.dirname(__file__),
                                'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', date_today, expt_name)
     if not os.path.exists(expt_folder):
