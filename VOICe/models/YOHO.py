@@ -1,6 +1,3 @@
-from model.attention.MobileViTAttention import MobileViTAttention
-from model.attention.ParNetAttention import *
-from model.attention.UFOAttention import *
 from audioop import add
 from matplotlib.style import use
 import torch
@@ -12,6 +9,10 @@ from models.attention.CBAM import CBAMBlock
 from config import YOHO_hparams, add_EAP_to_path
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d
 add_EAP_to_path()
+from model.attention.MobileViTAttention import MobileViTAttention
+from model.attention.ParNetAttention import *
+from model.attention.UFOAttention import *
+
 hp = YOHO_hparams()
 
 
