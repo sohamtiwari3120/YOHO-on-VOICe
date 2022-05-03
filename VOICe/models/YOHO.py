@@ -146,12 +146,13 @@ class Yoho(nn.Module):
             x = self.cbam(x)
         # if self.use_ufo:
         #     x = self.ufo(x)
-        if self.use_mva:
-            x = self.mva(x)
 
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
             x = block(x)
+            if i==0 and self.use_mva:
+                x = self.mva(x)
+
 
         if self.use_pna:
             x = self.pna(x)
