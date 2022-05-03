@@ -214,6 +214,8 @@ class YOHO_hparams(hparams):
         self.mva_kernel_size=3
         self.mva_patch_size=5
 
+        self.use_mish_activation = True
+
 
 class CoAtNet_hparams(hparams):
     def __init__(self) -> None:
