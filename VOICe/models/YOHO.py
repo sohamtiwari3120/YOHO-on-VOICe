@@ -150,6 +150,8 @@ class Yoho(nn.Module):
             x = self.cbam(x)
         # if self.use_ufo:
         #     x = self.ufo(x)
+        if self.use_pna:
+            x = self.pna_first(x)
 
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
@@ -157,9 +159,6 @@ class Yoho(nn.Module):
             if i==1 and self.use_mva:
                 x = self.mva(x)
 
-
-        if self.use_pna:
-            x = self.pna(x)
 
         batch_size, channels, height, width = x.size()
         x = torch.permute(x, (0, 1, 3, 2)).reshape(
