@@ -39,7 +39,7 @@ def pytorch(args):
     # tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
     #     os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
     wandb_logger = pl_loggers.WandbLogger(project='YOHO-on-VOICe', name=f"{date_today}/{expt_name}")
-    wandb_logger.experiment.config.update(vars(hp))
+    wandb_logger.experiment.config.update(hp.__dict__)
     wandb_logger.experiment.config.update(args)
     expt_folder = os.path.join(os.path.dirname(__file__),
                                'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', date_today, expt_name)
@@ -60,7 +60,7 @@ def pytorch(args):
         model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna, use_ufo = args.use_ufo, use_mva = args.use_mva))
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
-    logger.info(vars(hp))
+    logger.info(hp.__dict__)
     logger.info(vars(args))
 
     wandb_logger.watch(model)
