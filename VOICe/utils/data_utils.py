@@ -20,8 +20,8 @@ from utils.regex_utils import sort_nicely
 
 hp = hparams()
 
-envs = ['vehicle', 'outdoor', 'indoor']
-data_modes = ['training', 'test', 'validation']
+envs = hp.envs
+data_modes = hp.data_modes
 
 file_paths: file_paths_type = {}
 

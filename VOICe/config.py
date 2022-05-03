@@ -87,9 +87,10 @@ class hparams:
 
     # evaluate
     source_env = 'indoor'
-    target_env = 'vehicle'
     data_mode = 'test'
-
+    envs = ['vehicle', 'outdoor', 'indoor']
+    target_envs = envs
+    data_modes = ['training', 'test', 'validation']
     # kervolutional
     kernel_modes = ['linear', 'polynomial', 'gaussian']
 
