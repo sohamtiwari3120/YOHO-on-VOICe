@@ -506,8 +506,7 @@ class VOICeDataModule(pl.LightningDataModule):
         self.train_spec_transform = train_spec_transform
         self.val_spec_transform = val_spec_transform
         self.test_spec_transform = test_spec_transform
-
-        self., generator=self.g, num_workers = num_workerworker_init_fn=seed_workers
+        
         self.g = torch.Generator()
         self.g.manual_seed(hp.seed)
 
