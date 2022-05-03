@@ -60,7 +60,8 @@ def pytorch(args):
         model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna, use_ufo = args.use_ufo, use_mva = args.use_mva))
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
-        logger.info(vars(args))
+    logger.info(vars(hp))
+    logger.info(vars(args))
 
     wandb_logger.watch(model)
 
