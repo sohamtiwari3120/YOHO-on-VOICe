@@ -7,7 +7,7 @@ from models.ViT import VOICeViT
 from models.VOICeCoAtNet import VOICeCoAtNet
 from models.VOICeConvMixer import VOICeConvMixer
 from utils.data_utils import VOICeDataModule
-from pytorch_lightning import Trainer
+from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor
 from utils.torch_utils import MonitorSedF1Callback
@@ -28,6 +28,8 @@ torch.manual_seed(seed)
 random.seed(seed)
 np.random.seed(seed)
 torch.use_deterministic_algorithms(True)
+
+seed_everything(seed, workers=True)
 
 @logger.catch
 def pytorch(args):
@@ -68,7 +70,7 @@ def pytorch(args):
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     trainer = Trainer(callbacks=[MonitorSedF1Callback(
-        env, expt_folder), lr_monitor], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=wandb_logger, profiler='simple')
+        env, expt_folder), lr_monitor], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=wandb_logger, profiler='simple', deterministic=True)
     voice_dm = VOICeDataModule(env)
 
     if args.auto_lr:
