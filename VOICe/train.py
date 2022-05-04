@@ -12,7 +12,11 @@ from config import hparams, YOHO_hparams
 
 hp = hparams()
 seed = hp.seed
-torch.use_deterministic_algorithms(True)
+try:
+    torch.use_deterministic_algorithms(True)
+except Exception as e:
+    print(e)
+    print("Failed to set use_deterministic_algorithms(true)")
 seed_everything(seed, workers=True)
 
 from utils.torch_utils import MonitorSedF1Callback
