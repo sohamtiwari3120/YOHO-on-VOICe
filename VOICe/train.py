@@ -69,10 +69,7 @@ def pytorch(args):
 
     if args.model_summary:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model_stats = summary(model.to(device), (1, hp.input_height, hp.input_width))
-        summary_str = str(model_stats)
-        # wandb_logger.log_text(summary_str)
-        print(summary_str)
+        summary(model.to(device), (1, hp.input_height, hp.input_width))
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     earlystopping = EarlyStopping(monitor=hp.es_monitor, mode=hp.es_mode, patience=hp.es_patience)

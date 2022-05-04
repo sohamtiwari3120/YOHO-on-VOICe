@@ -37,14 +37,16 @@ class Yoho(nn.Module):
         self.use_mish_activation = use_mish_activation
         output_width = self.input_width
         output_height = self.input_height
+
         self.use_serf_activation = use_serf_activation
         activation = nn.ReLU
         if self.use_mish_activation:
             activation = nn.Mish
         if self.use_serf_activation:
             activation = Serf
+            
         self.use_patches = use_patches
-        self.use_residual = use_residual
+        
         if self.use_patches:
             self.block_first = nn.Sequential(
                 # making patches of input image
@@ -95,6 +97,7 @@ class Yoho(nn.Module):
             self.ufo = UFOAttention(d_model=int(
                 output_height), d_k=hp.ufo_d_k, d_v=hp.ufo_d_v, h=hp.ufo_h)
 
+        self.use_residual = use_residual
         self.blocks_depthwise = nn.ModuleList([])
         self.blocks_depthwise_padding: List[Tuple[int, int, int, int]] = []
         for i in range(len(self.depthwise_layers)):
