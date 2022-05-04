@@ -9,15 +9,20 @@ from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping
 import wandb
 from config import hparams, YOHO_hparams
-
+import random
+import numpy as np
 hp = hparams()
 seed = hp.seed
+torch.manual_seed(seed)
+random.seed(seed)
+np.random.seed(seed)
 try:
-    torch.use_deterministic_algorithms(True)
+    # torch.use_deterministic_algorithms(True)
+    pass
 except Exception as e:
     print(e)
     print("Failed to set use_deterministic_algorithms(true)")
-seed_everything(seed, workers=True)
+# seed_everything(seed, workers=True)
 
 from utils.torch_utils import MonitorSedF1Callback
 from utils.tf_utils import DataGenerator, my_loss_fn
@@ -38,6 +43,7 @@ def pytorch(args):
     expt_name = args.expt_name
     date_today = datetime.today().strftime('%d%m%Y')
     if "Yoho" in args.model_name:
+        global hp
         hp = YOHO_hparams()
     # tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
     #     os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
