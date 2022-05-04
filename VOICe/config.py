@@ -137,6 +137,11 @@ class hparams:
         self.patience = 5
         self.factor = 0.5
         self.monitor = 'validation_loss'
+
+        # Pytorch Lightning Early Stopping Callback
+        self.es_mode = 'min'
+        self.es_patience = 10
+        self.es_monitor = 'validation_loss'
     
         # PL trainer params
         self.devices = "auto"

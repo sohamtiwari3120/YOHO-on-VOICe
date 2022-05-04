@@ -6,7 +6,7 @@ from datetime import datetime
 from loguru import logger
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping
 from config import hparams
 
 hp = hparams()
@@ -66,8 +66,9 @@ def pytorch(args):
         summary(model.to(device), (1, hp.input_height, hp.input_width))
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
+    earlystopping = EarlyStopping(monitor=hp.es_monitor, mode=hp.es_mode, patience=hp.es_patience)
     trainer = Trainer(callbacks=[MonitorSedF1Callback(
-        env, expt_folder), lr_monitor], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=wandb_logger, profiler='simple', deterministic=True)
+        env, expt_folder), lr_monitor, earlystopping], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=wandb_logger, profiler='simple', deterministic=True)
     voice_dm = VOICeDataModule(env)
 
     if args.auto_lr:
