@@ -7,7 +7,7 @@ from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from models.attention.CBAM import CBAMBlock
 from config import YOHO_hparams, add_EAP_to_path
-from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d
+from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf
 add_EAP_to_path()
 from model.attention.MobileViTAttention import MobileViTAttention
 from model.attention.ParNetAttention import *
@@ -25,7 +25,7 @@ class Yoho(nn.Module):
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
-                 use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation,
+                 use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -36,20 +36,25 @@ class Yoho(nn.Module):
         self.use_mish_activation = use_mish_activation
         output_width = self.input_width
         output_height = self.input_height
-
+        self.use_serf_activation = use_serf_activation
+        activation = nn.ReLU
+        if self.use_mish_activation:
+            activation = nn.Mish
+        if self.use_serf_activation:
+            activation = Serf()
         self.use_patches = use_patches
         if self.use_patches:
             self.block_first = nn.Sequential(
                 # making patches of input image
                 InitializedConv2d(1, 32, (3, 3), stride=3, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
-                nn.Mish() if self.use_mish_activation else nn.ReLU()
+                activation()
             )
         else:
             self.block_first = nn.Sequential(
                 InitializedConv2d(1, 32, (3, 3), stride=2, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
-                nn.Mish() if self.use_mish_activation else nn.ReLU()
+                activation()
             )
 
         padding_left_right = compute_padding_along_dim(
@@ -113,11 +118,11 @@ class Yoho(nn.Module):
                     InitializedConv2d(input_channels, input_channels, kernel_size, stride=stride,
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
-                    nn.Mish() if self.use_mish_activation else nn.ReLU(),
+                    activation(),
                     InitializedConv2d(input_channels, output_channels,
                                       (1, 1), 1, padding=0, bias=False),  # step 2
                     InitializedBatchNorm2d(output_channels, eps=1e-4),
-                    nn.Mish() if self.use_mish_activation else nn.ReLU(),
+                    activation(),
                     nn.Dropout2d(0.1),
                     ParNetAttention(channel=output_channels) if self.use_pna else nn.Identity()
                 )

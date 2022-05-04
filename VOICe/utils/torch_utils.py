@@ -390,3 +390,42 @@ class InitializedBatchNorm2d(nn.BatchNorm2d):
         self.initialize_layer = initialize_layer
         if(self.initialize_layer):
             init_bn(self)
+
+
+# simply define a silu function
+def serf(input):
+    '''
+    Applies the log-Softplus ERror activation Function (serf) element-wise:
+        serf(x) = x * erf(ln(1+e^x))
+    '''
+    return input * torch.erf(torch.log(1+torch.exp(input))) # use torch.sigmoid to make sure that we created the most
+
+# create a class wrapper from PyTorch nn.Module, so
+# the function now can be easily used in models
+class Serf(nn.Module):
+    '''
+    Applies the log-Softplus ERror activation Function (serf) element-wise:
+        serf(x) = x * erf(ln(1+e^x))
+    Shape:
+        - Input: (N, *) where * means, any number of additional
+          dimensions
+        - Output: (N, *), same shape as the input
+    References:
+        -  Related paper:
+        https://arxiv.org/pdf/2108.09598.pdf
+    Examples:
+        >>> m = serf()
+        >>> input = torch.randn(2)
+        >>> output = m(input)
+    '''
+    def __init__(self):
+        '''
+        Init method.
+        '''
+        super().__init__() # init the base class
+
+    def forward(self, input):
+        '''
+        Forward pass of the function.
+        '''
+        return serf(input) # simply apply already implemented Serf
