@@ -200,7 +200,7 @@ class YOHO_hparams(hparams):
         self.cbam_kernel_size = 3
     
         # Patchify
-        self.use_patches = True
+        self.use_patches = False
     
         # UFO Attention
         self.use_ufo = True

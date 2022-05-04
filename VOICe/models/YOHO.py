@@ -113,7 +113,7 @@ class Yoho(nn.Module):
                 output_height, kernel_size[0], stride, 'same')
             self.blocks_depthwise_padding.append(
                 (padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1]))
-                
+
             dw_conv_block = nn.Sequential(
                         InitializedConv2d(input_channels, output_channels,
                                       (1, 1), 1, padding=0, bias=False),  # step 2
