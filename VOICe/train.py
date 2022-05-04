@@ -7,6 +7,7 @@ from loguru import logger
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping
+import wandb
 from config import hparams, YOHO_hparams
 
 hp = hparams()
@@ -68,7 +69,9 @@ def pytorch(args):
 
     if args.model_summary:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        summary(model.to(device), (1, hp.input_height, hp.input_width))
+        model_stats = summary(model.to(device), (1, hp.input_height, hp.input_width))
+        summary_str = str(model_stats)
+        wandb_logger.log_text(summary_str)
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     earlystopping = EarlyStopping(monitor=hp.es_monitor, mode=hp.es_mode, patience=hp.es_patience)
