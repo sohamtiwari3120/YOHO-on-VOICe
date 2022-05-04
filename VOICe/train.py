@@ -13,8 +13,7 @@ from config import hparams, YOHO_hparams
 hp = hparams()
 seed = hp.seed
 try:
-    # torch.use_deterministic_algorithms(True)
-    pass
+    torch.use_deterministic_algorithms(True)
 except Exception as e:
     print(e)
     print("Failed to set use_deterministic_algorithms(true)")
