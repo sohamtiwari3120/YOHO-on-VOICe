@@ -7,7 +7,7 @@ from loguru import logger
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping
-from config import hparams
+from config import hparams, YOHO_hparams
 
 hp = hparams()
 seed = hp.seed
@@ -32,6 +32,8 @@ def pytorch(args):
     env = args.env
     expt_name = args.expt_name
     date_today = datetime.today().strftime('%d%m%Y')
+    if "Yoho" in args.model_name:
+        hp = YOHO_hparams()
     # tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
     #     os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
     wandb_logger = pl_loggers.WandbLogger(project='YOHO-on-VOICe', name=f"{date_today}/{expt_name}")
@@ -56,6 +58,9 @@ def pytorch(args):
         model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna, use_ufo = args.use_ufo, use_mva = args.use_mva, use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation))
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
+
+
+
     logger.info(hp.__dict__)
     logger.info(vars(args))
 
