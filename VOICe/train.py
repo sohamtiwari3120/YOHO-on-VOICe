@@ -56,7 +56,7 @@ def pytorch(args):
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
         
-        model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna, use_ufo = args.use_ufo, use_mva = args.use_mva, use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches))
+        model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna, use_ufo = args.use_ufo, use_mva = args.use_mva, use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual))
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
 
@@ -150,6 +150,7 @@ if __name__ == '__main__':
     parser.add_argument('-mish', '--use_mish_activation', action='store_true')
     parser.add_argument('-serf', '--use_serf_activation', action='store_true')
     parser.add_argument('-patchify', '--use_patches', action='store_true')
+    parser.add_argument('-res', '--use_residual', action='store_true')
 
     args = parser.parse_args()
     eval(args.backend)(args)

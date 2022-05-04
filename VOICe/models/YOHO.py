@@ -26,6 +26,7 @@ class Yoho(nn.Module):
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation,
+                 use_residual: bool = hp.use_residual,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -43,6 +44,7 @@ class Yoho(nn.Module):
         if self.use_serf_activation:
             activation = Serf
         self.use_patches = use_patches
+        self.use_residual = use_residual
         if self.use_patches:
             self.block_first = nn.Sequential(
                 # making patches of input image
@@ -128,7 +130,7 @@ class Yoho(nn.Module):
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     activation(),
-                    Residual(dw_conv_block) if input_channels == output_channels else dw_conv_block
+                    Residual(dw_conv_block) if input_channels == output_channels and self.use_residual else dw_conv_block
                 )
             )
             # for step 1:

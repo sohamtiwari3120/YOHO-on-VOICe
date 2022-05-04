@@ -222,6 +222,8 @@ class YOHO_hparams(hparams):
         self.use_mish_activation = False
         self.use_serf_activation = False
 
+        self.use_residual = True
+
 
 class CoAtNet_hparams(hparams):
     def __init__(self) -> None:
