@@ -41,7 +41,7 @@ class Yoho(nn.Module):
         if self.use_mish_activation:
             activation = nn.Mish
         if self.use_serf_activation:
-            activation = Serf()
+            activation = Serf
         self.use_patches = use_patches
         if self.use_patches:
             self.block_first = nn.Sequential(
