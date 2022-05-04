@@ -55,8 +55,10 @@ def pytorch(args):
         model = LM.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
-        
-        model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna, use_ufo = args.use_ufo, use_mva = args.use_mva, use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual))
+        if args.model_name == "Yoho":
+            model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna, use_ufo = args.use_ufo, use_mva = args.use_mva, use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual))
+        else:
+             model = LM(eval(args.model_name)(use_cbam=args.use_cbam))
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
 

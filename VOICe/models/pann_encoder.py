@@ -340,8 +340,7 @@ class VOICePANNYoho(nn.Module):
                  pann_version: str = hp.pann_version,
                  num_classes: int = hp.num_classes,
                  input_height: int = hp.input_height, input_width: int = hp.input_width,
-                 pann_encoder_ckpt_path: str = hp.pann_encoder_ckpt_path_cnn10, use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size, use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation,
-                 use_residual: bool = hp.use_residual,
+                 pann_encoder_ckpt_path: str = hp.pann_encoder_ckpt_path_cnn10, use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  *args: Any, **kwargs: Any) -> None:
 
         super(VOICePANNYoho, self).__init__(*args, **kwargs)
