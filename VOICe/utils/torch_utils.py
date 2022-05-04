@@ -429,3 +429,11 @@ class Serf(nn.Module):
         Forward pass of the function.
         '''
         return serf(input) # simply apply already implemented Serf
+
+class Residual(nn.Module):
+    def __init__(self, func) -> None:
+        super().__init__()
+        self.func = func
+
+    def forward(self, x):
+        return x + self.func(x)

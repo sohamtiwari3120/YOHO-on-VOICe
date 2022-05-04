@@ -7,7 +7,7 @@ from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from models.attention.CBAM import CBAMBlock
 from config import YOHO_hparams, add_EAP_to_path
-from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf
+from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf, Residual
 add_EAP_to_path()
 from model.attention.MobileViTAttention import MobileViTAttention
 from model.attention.ParNetAttention import *
@@ -113,18 +113,21 @@ class Yoho(nn.Module):
                 output_height, kernel_size[0], stride, 'same')
             self.blocks_depthwise_padding.append(
                 (padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1]))
+            dw_conv_block = nn.Sequential(
+                        InitializedConv2d(input_channels, output_channels,
+                                      (1, 1), 1, padding=0, bias=False),  # step 2
+                        InitializedBatchNorm2d(output_channels, eps=1e-4),
+                        activation(),
+                        nn.Dropout2d(0.1),
+                        ParNetAttention(channel=output_channels) if self.use_pna else nn.Identity())
+
             self.blocks_depthwise.append(
                 nn.Sequential(
                     InitializedConv2d(input_channels, input_channels, kernel_size, stride=stride,
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     activation(),
-                    InitializedConv2d(input_channels, output_channels,
-                                      (1, 1), 1, padding=0, bias=False),  # step 2
-                    InitializedBatchNorm2d(output_channels, eps=1e-4),
-                    activation(),
-                    nn.Dropout2d(0.1),
-                    ParNetAttention(channel=output_channels) if self.use_pna else nn.Identity()
+                    Residual(dw_conv_block) if input_channels == output_channels else dw_conv_block
                 )
             )
             # for step 1:
