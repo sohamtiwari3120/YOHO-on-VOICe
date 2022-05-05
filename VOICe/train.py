@@ -24,17 +24,17 @@ except Exception as e:
     print("Failed to set use_deterministic_algorithms(true)")
 # seed_everything(seed, workers=True)
 
-from utils.torch_utils import MonitorSedF1Callback
-from utils.tf_utils import DataGenerator, my_loss_fn
-from utils.pl_utils import LM
-from models.YOHO import Yoho
-from models.YOHO_tf import YohoTF
-from models.VOICeConvNeXt import VOICeConvNeXt
-from models.pann_encoder import VOICePANN, VOICePANNYoho
-from models.ViT import VOICeViT
-from models.VOICeCoAtNet import VOICeCoAtNet
-from models.VOICeConvMixer import VOICeConvMixer
-from utils.data_utils import VOICeDataModule
+from utils.torch_utils import MonitorSedF1Callback  # NOQA
+from utils.tf_utils import DataGenerator, my_loss_fn  # NOQA
+from utils.pl_utils import LM  # NOQA
+from models.YOHO import Yoho  # NOQA
+from models.YOHO_tf import YohoTF  # NOQA
+from models.VOICeConvNeXt import VOICeConvNeXt  # NOQA
+from models.pann_encoder import VOICePANN, VOICePANNYoho  # NOQA
+from models.ViT import VOICeViT  # NOQA
+from models.VOICeCoAtNet import VOICeCoAtNet  # NOQA
+from models.VOICeConvMixer import VOICeConvMixer  # NOQA
+from utils.data_utils import VOICeDataModule  # NOQA
 
 
 @logger.catch
@@ -45,11 +45,7 @@ def pytorch(args):
     if "Yoho" in args.model_name:
         global hp
         hp = YOHO_hparams()
-    # tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
-    #     os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
-    wandb_logger = pl_loggers.WandbLogger(project='YOHO-on-VOICe', name=f"{date_today}/{expt_name}")
-    wandb_logger.experiment.config.update(hp.__dict__, allow_val_change=True)
-    wandb_logger.experiment.config.update(args, allow_val_change=True)
+
     expt_folder = os.path.join(os.path.dirname(__file__),
                                'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', date_today, expt_name)
     if not os.path.exists(expt_folder):
@@ -66,17 +62,25 @@ def pytorch(args):
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
         if args.model_name == "Yoho":
-            model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna = args.use_pna, use_ufo = args.use_ufo, use_mva = args.use_mva, use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual))
+            model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna=args.use_pna, use_ufo=args.use_ufo, use_mva=args.use_mva,
+                       use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual))
         else:
-             model = LM(eval(args.model_name)(use_cbam=args.use_cbam))
+            model = LM(eval(args.model_name)(use_cbam=args.use_cbam))
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
-
-
 
     logger.info(hp.__dict__)
     logger.info(vars(args))
 
+    if args.no_wandb:
+        tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
+            os.path.dirname(__file__), 'lightning_logs', date_today, expt_name))
+    else:
+        wandb_logger = pl_loggers.WandbLogger(
+            project='YOHO-on-VOICe', name=f"{date_today}/{expt_name}")
+        wandb_logger.experiment.config.update(
+            hp.__dict__, allow_val_change=True)
+        wandb_logger.experiment.config.update(args, allow_val_change=True)
     wandb_logger.watch(model)
 
     if args.model_summary:
@@ -84,9 +88,10 @@ def pytorch(args):
         summary(model.to(device), (1, hp.input_height, hp.input_width))
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
-    earlystopping = EarlyStopping(monitor=hp.es_monitor, mode=hp.es_mode, patience=hp.es_patience)
+    earlystopping = EarlyStopping(
+        monitor=hp.es_monitor, mode=hp.es_mode, patience=hp.es_patience)
     trainer = Trainer(callbacks=[MonitorSedF1Callback(
-        env, expt_folder), lr_monitor, earlystopping], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=wandb_logger, profiler='simple', deterministic=True)
+        env, expt_folder), lr_monitor, earlystopping], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=tb_logger if args.no_wandb else wandb_logger, profiler='simple', deterministic=True)
     voice_dm = VOICeDataModule(env)
 
     if args.auto_lr:
@@ -160,6 +165,7 @@ if __name__ == '__main__':
     parser.add_argument('-serf', '--use_serf_activation', action='store_true')
     parser.add_argument('-patchify', '--use_patches', action='store_true')
     parser.add_argument('-res', '--use_residual', action='store_true')
+    parser.add_argument('-nwb', '--no_wandb', action="store_true")
 
     args = parser.parse_args()
     eval(args.backend)(args)
