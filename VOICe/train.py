@@ -13,16 +13,10 @@ import random
 import numpy as np
 hp = hparams()
 seed = hp.seed
-torch.manual_seed(seed)
-random.seed(seed)
-np.random.seed(seed)
-try:
-    # torch.use_deterministic_algorithms(True)
-    pass
-except Exception as e:
-    print(e)
-    print("Failed to set use_deterministic_algorithms(true)")
-# seed_everything(seed, workers=True)
+hp = hparams()
+seed = hp.seed
+
+seed_everything(seed, workers=True)
 
 from utils.torch_utils import MonitorSedF1Callback  # NOQA
 from utils.tf_utils import DataGenerator, my_loss_fn  # NOQA
@@ -90,8 +84,10 @@ def pytorch(args):
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     earlystopping = EarlyStopping(
         monitor=hp.es_monitor, mode=hp.es_mode, patience=hp.es_patience)
+
+    torch.use_deterministic_algorithms(not args.indeterministic)
     trainer = Trainer(callbacks=[MonitorSedF1Callback(
-        env, expt_folder), lr_monitor, earlystopping], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=tb_logger if args.no_wandb else wandb_logger, profiler='simple', deterministic=True)
+        env, expt_folder), lr_monitor, earlystopping], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=tb_logger if args.no_wandb else wandb_logger, profiler='simple', deterministic=not args.indeterministic)
     voice_dm = VOICeDataModule(env)
 
     if args.auto_lr:
@@ -166,6 +162,7 @@ if __name__ == '__main__':
     parser.add_argument('-patchify', '--use_patches', action='store_true')
     parser.add_argument('-res', '--use_residual', action='store_true')
     parser.add_argument('-nwb', '--no_wandb', action="store_true")
+    parser.add_argument('-indt', '--indeterministic', action="store_true")
 
     args = parser.parse_args()
     eval(args.backend)(args)
