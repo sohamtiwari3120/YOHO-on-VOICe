@@ -34,7 +34,10 @@ def evaluate(args):
                               f"model-{model_name}-{source_env}-best-f1.ckpt")
     if not os.path.exists:
         raise Exception(f'Model checkpoint not found: {chkpt_path}.')
-    model = LM.load_from_checkpoint(chkpt_path, model=eval(model_name)())
+    if model_name == "Yoho":
+        model = eval(model_name).load_from_checkpoint(chkpt_path)
+    else:
+        model = LM.load_from_checkpoint(chkpt_path, model=eval(model_name)())
     logger.info(f'Loaded model checkpoint: {chkpt_path}')
 
     wandb.init(project="YOHO-on-VOICe", entity="sohamtiwari3120", name=f"Evaluate {expt_folder} - {source_env} - {target_envs}")
