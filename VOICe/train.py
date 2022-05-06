@@ -7,9 +7,7 @@ from loguru import logger
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping
-import wandb
 from config import hparams, YOHO_hparams
-import random
 import numpy as np
 hp = hparams()
 seed = hp.seed

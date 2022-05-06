@@ -26,6 +26,7 @@ class LM(LightningModule):
         self.model = model
         self.learning_rate = learning_rate
         self.loss_function = loss_function
+        self.save_hyperparameters()
 
     def forward(self, x):
         x = self.model(x)
