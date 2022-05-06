@@ -45,6 +45,7 @@ def evaluate(args):
         logger.success("Error rate: {:.3f}".format(curr_error))
         wandb.log({'F-measure':{f"src-{source_env}-tgt-{target_env}": curr_f1}, "Error rate": {f"src-{source_env}-tgt-{target_env}": curr_error}})
         all_metrics[f"src-{source_env}-tgt-{target_env}"] = {'f1': curr_f1, 'error': curr_error}
+        logger.info(all_metrics)
 
     # Or print all metrics as reports
     return all_metrics
@@ -62,4 +63,4 @@ if __name__ == '__main__':
                         default=hp.data_mode, choices=data_modes)
 
     args = parser.parse_args()
-    f1, error = evaluate(args)
+    all_metrics = evaluate(args)
