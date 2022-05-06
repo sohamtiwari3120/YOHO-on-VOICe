@@ -49,7 +49,7 @@ class LM(LightningModule):
 
     # check for default parameter values for tf and pytorch
     def configure_optimizers(self):
-        opt = Adam(self.model.parameters(),
+        opt = Adam(self.parameters(),
                    lr=self.learning_rate, eps=hp.adam_eps, weight_decay=hp.adam_weight_decay)
         return {
             "optimizer": opt,
