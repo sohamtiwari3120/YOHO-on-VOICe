@@ -30,7 +30,7 @@ class Yoho(LM):
                  use_residual: bool = hp.use_residual,
                  *args: Any, **kwargs: Any) -> None:
 
-        super(Yoho, self).__init__(model_name="Yoho", *args, **kwargs)
+        super(Yoho, self).__init__(*args, **kwargs)
         self.depthwise_layers = depthwise_layers
         self.num_classes = num_classes
         self.input_height = input_height
