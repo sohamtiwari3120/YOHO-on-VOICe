@@ -18,19 +18,18 @@ class LM(LightningModule):
     """
 
     def __init__(self,
-                 model: nn.Module,
+                 model_name: str,
                  learning_rate: double = hp.learning_rate, loss_function=eval(hp.loss_function_str),
                  *args: Any, **kwargs: Any) -> None:
 
         super(LM, self).__init__(*args, **kwargs)
-        self.model = model
+        self.model_name = model_name
         self.learning_rate = learning_rate
         self.loss_function = loss_function
         self.save_hyperparameters()
 
     def forward(self, x):
-        x = self.model(x)
-        return x
+        raise NotImplementedError()
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -61,18 +60,6 @@ class LM(LightningModule):
                 # multiple of "trainer.check_val_every_n_epoch".
             }
         }
-
-    # def on_fit_start(self) -> None:
-    #     print(f"\n\n\n\nModel Params:\n")
-    #     for param in self.model.parameters():
-    #         print(param)
-    #     print(f"\nEnd\n\n")
-
-    # def on_fit_end(self) -> None:
-    #     print(f"\n\n\n\nModel Params:\n")
-    #     for param in self.model.parameters():
-    #         print(param)
-    #     print(f"\nEnd\n\n")
 
     def predict(self, x):
         with torch.no_grad():

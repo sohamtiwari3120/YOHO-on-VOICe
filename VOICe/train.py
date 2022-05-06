@@ -8,9 +8,6 @@ from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor, EarlyStopping
 from config import hparams, YOHO_hparams
-import numpy as np
-hp = hparams()
-seed = hp.seed
 hp = hparams()
 seed = hp.seed
 
@@ -34,10 +31,6 @@ def pytorch(args):
     env = args.env
     expt_name = args.expt_name
     date_today = datetime.today().strftime('%d%m%Y')
-    if "Yoho" in args.model_name:
-        global hp
-        hp = YOHO_hparams()
-
     expt_folder = os.path.join(os.path.dirname(__file__),
                                'model_checkpoints', f'{hp.snr}-mono', f'{args.backend}', date_today, expt_name)
     if not os.path.exists(expt_folder):
@@ -49,20 +42,23 @@ def pytorch(args):
     logger.info(
         f'{expt_name}: Starting training of model for {env} audio. Saving checkpoints and logs in {expt_folder}')
 
+    lightning_model_class = eval(args.model_name)
+
     if args.chkpt_path is not None:
-        model = LM.load_from_checkpoint(args.chkpt_path)
+        model = lightning_model_class.load_from_checkpoint(args.chkpt_path)
         logger.info(f'Loaded model checkpoint: {args.chkpt_path}')
     else:
         if args.model_name == "Yoho":
-            model = LM(eval(args.model_name)(use_cbam=args.use_cbam, use_pna=args.use_pna, use_ufo=args.use_ufo, use_mva=args.use_mva,
-                       use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual))
+            model = lightning_model_class(use_cbam=args.use_cbam, use_pna=args.use_pna, use_ufo=args.use_ufo, use_mva=args.use_mva,
+                       use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual)
         else:
             model = LM(eval(args.model_name)(use_cbam=args.use_cbam))
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
 
-    logger.info(hp.__dict__)
-    logger.info(vars(args))
+    params = hp.__dict__
+    params.update(vars(args))
+    logger.info(params)
 
     if args.no_wandb:
         tb_logger = pl_loggers.TensorBoardLogger(os.path.join(
@@ -101,9 +97,7 @@ def pytorch(args):
         logger.info(f'new_lr = {new_lr}')
         # update hparams of the model
         model.learning_rate = new_lr
-        model.save_hyperparameters()
-        logger.info("MODEL HPARAMS")
-        logger.info(model.hparams)
+        model.hparams.learning_rate = new_lr
 
     # Fit model
     trainer.fit(model, voice_dm)

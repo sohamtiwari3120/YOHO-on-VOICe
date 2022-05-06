@@ -1,10 +1,12 @@
 from audioop import add
 from matplotlib.style import use
+from numpy import double
 import torch
 from torch.nn import functional as F
 from torch import nn
 from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
+from utils.pl_utils import LM
 from models.attention.CBAM import CBAMBlock
 from config import YOHO_hparams, add_EAP_to_path
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf, Residual
@@ -16,10 +18,9 @@ from model.attention.UFOAttention import *
 hp = YOHO_hparams()
 
 
-class Yoho(nn.Module):
-    """PyTorch Model for Yoho Algorithm
+class Yoho(LM):
+    """PyTorch-Lightning Model for Yoho Algorithm
     """
-
     def __init__(self,
                  depthwise_layers: depthwise_layers_type = hp.depthwise_layers,
                  num_classes: int = hp.num_classes,
@@ -29,7 +30,7 @@ class Yoho(nn.Module):
                  use_residual: bool = hp.use_residual,
                  *args: Any, **kwargs: Any) -> None:
 
-        super(Yoho, self).__init__(*args, **kwargs)
+        super(Yoho, self).__init__(model_name="Yoho", *args, **kwargs)
         self.depthwise_layers = depthwise_layers
         self.num_classes = num_classes
         self.input_height = input_height
