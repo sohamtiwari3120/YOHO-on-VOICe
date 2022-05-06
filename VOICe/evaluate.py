@@ -17,12 +17,13 @@ def evaluate(args):
     target_envs = args.target_envs
     data_mode = args.data_mode
     expt_folder = args.expt_folder
+    model_name = args.model_name
     if not os.path.exists(expt_folder):
         raise Exception(f'Folder not found: {expt_folder}')
     logger.info(f'Loading best f1 model for {source_env} audio.')
     model_ckpt_folder_path = expt_folder
     chkpt_path = os.path.join(model_ckpt_folder_path,
-                              f"model-{source_env}-best-f1.ckpt")
+                              f"model-{model_name}-{source_env}-best-f1.ckpt")
     if not os.path.exists:
         raise Exception(f'Model checkpoint not found: {chkpt_path}.')
     model = LM.load_from_checkpoint(chkpt_path)
@@ -59,8 +60,10 @@ if __name__ == '__main__':
                         default=hp.backend, choices=hp.backends)
     parser.add_argument('-se', '--source_env', type=str, default=hp.source_env)
     parser.add_argument('-tes', '--target_envs', nargs='+', default=hp.target_envs)
-    parser.add_argument('-m', '--data_mode', type=str,
+    parser.add_argument('-dm', '--data_mode', type=str,
                         default=hp.data_mode, choices=data_modes)
+    parser.add_argument('-m', '--model_name', type=str,
+                        default=hp.model_name, choices=hp.models)
 
     args = parser.parse_args()
     all_metrics = evaluate(args)
