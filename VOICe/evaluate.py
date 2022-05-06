@@ -57,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--backend', type=str,
                         default=hp.backend, choices=hp.backends)
     parser.add_argument('-se', '--source_env', type=str, default=hp.source_env)
-    parser.add_argument('-tes', '--target_envs', nargs='+', default=hp.target_env)
+    parser.add_argument('-tes', '--target_envs', nargs='+', default=hp.target_envs)
     parser.add_argument('-m', '--data_mode', type=str,
                         default=hp.data_mode, choices=data_modes)
 
