@@ -101,6 +101,9 @@ def pytorch(args):
         logger.info(f'new_lr = {new_lr}')
         # update hparams of the model
         model.learning_rate = new_lr
+        model.save_hyperparameters()
+        logger.info("MODEL HPARAMS")
+        logger.info(model.hparams)
 
     # Fit model
     trainer.fit(model, voice_dm)
