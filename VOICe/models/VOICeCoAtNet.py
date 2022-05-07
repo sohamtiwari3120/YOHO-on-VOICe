@@ -3,6 +3,7 @@ from typing import Any
 import torch
 from torch import nn
 from utils.torch_utils import compute_conv_transpose_kernel_size, compute_conv_kernel_size
+from utils.pl_utils import LM
 from models.attention.CBAM import CBAMBlock
 from config import add_EAP_to_path, CoAtNet_hparams
 add_EAP_to_path()
@@ -10,7 +11,7 @@ add_EAP_to_path()
 hp = CoAtNet_hparams()
 
 
-class VOICeCoAtNet(nn.Module):
+class VOICeCoAtNet(LM):
     """CoAtNet model adapted for VOICe dataset
     """
 
@@ -23,7 +24,6 @@ class VOICeCoAtNet(nn.Module):
         self.num_classes = num_classes
         self.input_height = input_height
         self.input_width = input_width
-
         if self.input_height > self.input_width:
             self.make_input_square = nn.ConvTranspose2d(
                 1, 1, (1, compute_conv_transpose_kernel_size(self.input_width, self.input_height)))

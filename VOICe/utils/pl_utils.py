@@ -18,12 +18,10 @@ class LM(LightningModule):
     """
 
     def __init__(self,
-                 model_name: str,
                  learning_rate: double = hp.learning_rate, loss_function=eval(hp.loss_function_str),
                  *args: Any, **kwargs: Any) -> None:
 
         super(LM, self).__init__(*args, **kwargs)
-        self.model_name = model_name
         self.learning_rate = learning_rate
         self.loss_function = loss_function
         self.save_hyperparameters()

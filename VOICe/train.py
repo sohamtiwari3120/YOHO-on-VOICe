@@ -51,6 +51,8 @@ def pytorch(args):
         if args.model_name == "Yoho":
             model = lightning_model_class(use_cbam=args.use_cbam, use_pna=args.use_pna, use_ufo=args.use_ufo, use_mva=args.use_mva,
                        use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual)
+        elif args.model_name == "VOICeCoAtNet":
+            model = lightning_model_class(use_cbam=args.use_cbam)
         else:
             model = LM(eval(args.model_name)(use_cbam=args.use_cbam))
         logger.info(f'Starting a fresh model.')
