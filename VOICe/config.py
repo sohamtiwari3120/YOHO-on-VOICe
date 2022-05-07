@@ -52,7 +52,7 @@ class hparams:
         # common framework agnostic model params
         self.env = 'indoor'
         self.learning_rate = 1e-3
-        self.batch_size = 64
+        self.batch_size = 32
         # note, we are saving transpose of the logmelspecs
         # hence 257 is actually the length of the time dimension before transpose
         self.input_height = 257
