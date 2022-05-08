@@ -169,6 +169,8 @@ class Yoho(LM):
     def forward(self, input):
         x = input.float()
         x = F.pad(x, self.block_first_padding)
+        if self.use_rectangular:
+            x = self.rect_filters(x)
         x = self.block_first(x)
         if self.use_cbam:
             x = self.cbam(x)
