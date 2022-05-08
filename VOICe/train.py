@@ -50,7 +50,7 @@ def pytorch(args):
     else:
         if args.model_name == "Yoho":
             model = lightning_model_class(use_cbam=args.use_cbam, use_pna=args.use_pna, use_ufo=args.use_ufo, use_mva=args.use_mva,
-                       use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual)
+                       use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual, use_rectangular=args.use_rectangular)
         elif args.model_name == "VOICeCoAtNet":
             model = lightning_model_class(use_cbam=args.use_cbam)
         else:
@@ -160,6 +160,7 @@ if __name__ == '__main__':
     parser.add_argument('-res', '--use_residual', action='store_true')
     parser.add_argument('-nwb', '--no_wandb', action="store_true")
     parser.add_argument('-indt', '--indeterministic', action="store_true")
+    parser.add_argument('-rect', '--use_rectangular', action="store_true")
 
     args = parser.parse_args()
     eval(args.backend)(args)
