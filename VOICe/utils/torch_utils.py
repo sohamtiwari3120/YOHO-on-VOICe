@@ -437,3 +437,22 @@ class Residual(nn.Module):
 
     def forward(self, x):
         return x + self.func(x)
+
+class RectangularKernels(nn.Module):
+    def __init__(self, input_height: int = hp.input_height) -> None:
+        super().__init__()
+        self.input_height = input_height
+
+        self.filter1 = nn.Conv2d(1, 1, (3, 3), padding='same')
+        self.filter2 = nn.Conv2d(1, 1, (self.input_height*1//4, 3), padding='same')
+        self.filter3 = nn.Conv2d(1, 1, (self.input_height*2//4, 3), padding='same')
+        self.filter4 = nn.Conv2d(1, 1, (self.input_height*3//4, 3), padding='same')
+    
+    def forward(self, input):
+        out1 = self.filter1(input)
+        out2 = self.filter2(input)
+        out3 = self.filter3(input)
+        out4 = self.filter4(input)
+
+        x = torch.cat((out1, out2, out3, out4), dim=1)
+        return x

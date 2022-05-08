@@ -9,7 +9,7 @@ from utils.types import depthwise_layers_type
 from utils.pl_utils import LM
 from models.attention.CBAM import CBAMBlock
 from config import YOHO_hparams, add_EAP_to_path
-from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf, Residual
+from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf, Residual, RectangularKernels
 add_EAP_to_path()
 from model.attention.MobileViTAttention import MobileViTAttention
 from model.attention.ParNetAttention import *
@@ -28,6 +28,7 @@ class Yoho(LM):
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation,
                  use_residual: bool = hp.use_residual,
+                 use_rectangular: bool = hp.use_rectangular,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -47,17 +48,24 @@ class Yoho(LM):
             activation = Serf
             
         self.use_patches = use_patches
-        
+        self.use_rectangular = use_rectangular
+
+        if self.use_rectangular:
+            self.rect_filters = nn.Sequential(
+                RectangularKernels(self.input_height),
+                activation()
+            )
+
         if self.use_patches:
             self.block_first = nn.Sequential(
                 # making patches of input image
-                InitializedConv2d(1, 32, (3, 3), stride=3, bias=False),
+                InitializedConv2d(4 if self.use_rectangular else 1, 32, (3, 3), stride=3, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
             )
         else:
             self.block_first = nn.Sequential(
-                InitializedConv2d(1, 32, (3, 3), stride=2, bias=False),
+                InitializedConv2d(4 if self.use_rectangular else 1, 32, (3, 3), stride=2, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
             )

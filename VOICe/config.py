@@ -203,17 +203,17 @@ class YOHO_hparams(hparams):
         self.use_patches = False
     
         # UFO Attention
-        self.use_ufo = True
+        self.use_ufo = False
         self.ufo_d_k=512
         self.ufo_d_v=512
         self.ufo_h=8
     
         # ParNet Attention Usage
-        self.use_pna = True
+        self.use_pna = False
         self.pna_channels = 32
     
         # MobileViT Attention Usage
-        self.use_mva = True
+        self.use_mva = False
         self.mva_in_channel=128
         self.mva_dim=512
         self.mva_kernel_size=3
@@ -222,7 +222,9 @@ class YOHO_hparams(hparams):
         self.use_mish_activation = False
         self.use_serf_activation = False
 
-        self.use_residual = True
+        self.use_residual = False
+
+        self.use_rectangular = False
 
 
 class CoAtNet_hparams(hparams):
