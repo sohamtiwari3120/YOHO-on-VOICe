@@ -1,3 +1,6 @@
 [submodule "VOICe/models/External-Attention-pytorch"]
 	path = VOICe/models/External-Attention-pytorch
 	url = git@github.com:sohamtiwari3120/External-Attention-pytorch.git
+[submodule "VOICe/utils/leaf-pytorch"]
+	path = VOICe/utils/leaf-pytorch
+	url = git@github.com:SarthakYadav/leaf-pytorch.git
