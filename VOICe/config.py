@@ -49,7 +49,7 @@ class hparams:
         self.num_subwindows = 9
     
         # process_dataset
-        self.save_logmelspec: bool = False
+        self.save_logmelspec: bool = True
         self.save_labels: bool = True
     
         # dataset melspec
