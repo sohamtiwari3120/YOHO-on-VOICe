@@ -16,6 +16,17 @@ def add_EAP_to_path():
         print('Error EAP_PATH not found in .env file.')
         return 0
         
+def add_leaf_to_path():
+    """Function to add EAP - External-Attention-pytorch to the module's path.
+    """    
+    LEAF_PATH = "/notebooks/YOHO/YOHO-on-VOICe/VOICe/utils/leaf-pytorch"
+    if LEAF_PATH is not None:
+        sys.path.insert(0, LEAF_PATH)
+        return 1
+    else:
+        print('Error LEAF_PATH not found in .env file.')
+        return 0
+
 class hparams:
     def __init__(self) -> None:
 
@@ -225,6 +236,8 @@ class YOHO_hparams(hparams):
         self.use_residual = False
 
         self.use_rectangular = False
+
+        self.use_leaf = True
 
 
 class CoAtNet_hparams(hparams):
