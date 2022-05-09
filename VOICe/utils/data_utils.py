@@ -377,7 +377,7 @@ def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows):
         os.path.dirname(__file__)), 'data')
     folder_path = os.path.join(
         base_dir, f'{hp.snr}-mono', f'{mode}-data', env)
-    logmel_path = os.path.join(folder_path, 'logmels_npy')
+    logmel_path = os.path.join(folder_path, 'audio_wavs' if hp.use_leaf else 'logmels_npy')
     label_path = os.path.join(
         folder_path, 'labels_npy', f'num_subwindows={num_subwindows}')
     return logmel_path, label_path
