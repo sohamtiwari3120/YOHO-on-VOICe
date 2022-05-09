@@ -201,6 +201,9 @@ class hparams:
         self.vit_dropout=0.1
         self.vit_emb_dropout=0.
 
+        # LEAF Frontend
+        self.use_leaf = True
+
 class YOHO_hparams(hparams):
     def __init__(self) -> None:
         super().__init__()
@@ -237,7 +240,6 @@ class YOHO_hparams(hparams):
 
         self.use_rectangular = False
 
-        self.use_leaf = True
 
 
 class CoAtNet_hparams(hparams):

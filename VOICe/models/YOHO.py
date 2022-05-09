@@ -8,12 +8,14 @@ from typing import Any, List, Tuple
 from utils.types import depthwise_layers_type
 from utils.pl_utils import LM
 from models.attention.CBAM import CBAMBlock
-from config import YOHO_hparams, add_EAP_to_path
+from config import YOHO_hparams, add_EAP_to_path, add_leaf_to_path
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf, Residual, RectangularKernels
 add_EAP_to_path()
-from model.attention.MobileViTAttention import MobileViTAttention
-from model.attention.ParNetAttention import *
-from model.attention.UFOAttention import *
+add_leaf_to_path()
+from leaf_pytorch.frontend import Leaf  # NOQA
+from model.attention.MobileViTAttention import MobileViTAttention  # NOQA
+from model.attention.ParNetAttention import *  # NOQA
+from model.attention.UFOAttention import *  # NOQA
 
 hp = YOHO_hparams()
 
@@ -21,6 +23,7 @@ hp = YOHO_hparams()
 class Yoho(LM):
     """PyTorch-Lightning Model for Yoho Algorithm
     """
+
     def __init__(self,
                  depthwise_layers: depthwise_layers_type = hp.depthwise_layers,
                  num_classes: int = hp.num_classes,
@@ -28,7 +31,7 @@ class Yoho(LM):
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation,
                  use_residual: bool = hp.use_residual,
-                 use_rectangular: bool = hp.use_rectangular,
+                 use_rectangular: bool = hp.use_rectangular, use_leaf: bool = hp.use_leaf,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -40,13 +43,20 @@ class Yoho(LM):
         output_width = self.input_width
         output_height = self.input_height
 
+        self.use_leaf = use_leaf
+        if self.use_leaf:
+            self.leaf = Leaf(n_filters=hp.n_mels,
+                             sample_rate=hp.sample_rate,
+                             init_min_freq=hp.fmin,
+                             init_max_freq=hp.fmax)
+
         self.use_serf_activation = use_serf_activation
         activation = nn.ReLU
         if self.use_mish_activation:
             activation = nn.Mish
         if self.use_serf_activation:
             activation = Serf
-            
+
         self.use_patches = use_patches
         self.use_rectangular = use_rectangular
 
@@ -59,13 +69,15 @@ class Yoho(LM):
         if self.use_patches:
             self.block_first = nn.Sequential(
                 # making patches of input image
-                InitializedConv2d(4 if self.use_rectangular else 1, 32, (3, 3), stride=3, bias=False),
+                InitializedConv2d(4 if self.use_rectangular else 1,
+                                  32, (3, 3), stride=3, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
             )
         else:
             self.block_first = nn.Sequential(
-                InitializedConv2d(4 if self.use_rectangular else 1, 32, (3, 3), stride=2, bias=False),
+                InitializedConv2d(4 if self.use_rectangular else 1,
+                                  32, (3, 3), stride=2, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
             )
@@ -100,7 +112,6 @@ class Yoho(LM):
         if self.use_pna:
             self.pna_first = ParNetAttention(channel=32)
 
-        
         self.use_ufo = use_ufo
         if self.use_ufo:
             self.ufo = UFOAttention(d_model=int(
@@ -129,12 +140,12 @@ class Yoho(LM):
                 (padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1]))
 
             dw_conv_block = nn.Sequential(
-                        InitializedConv2d(input_channels, output_channels,
-                                      (1, 1), 1, padding=0, bias=False),  # step 2
-                        InitializedBatchNorm2d(output_channels, eps=1e-4),
-                        activation(),
-                        nn.Dropout2d(0.1),
-                        ParNetAttention(channel=output_channels) if self.use_pna else nn.Identity())
+                InitializedConv2d(input_channels, output_channels,
+                                  (1, 1), 1, padding=0, bias=False),  # step 2
+                InitializedBatchNorm2d(output_channels, eps=1e-4),
+                activation(),
+                nn.Dropout2d(0.1),
+                ParNetAttention(channel=output_channels) if self.use_pna else nn.Identity())
 
             self.blocks_depthwise.append(
                 nn.Sequential(
@@ -142,7 +153,8 @@ class Yoho(LM):
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     activation(),
-                    Residual(dw_conv_block) if input_channels == output_channels and self.use_residual else dw_conv_block
+                    Residual(
+                        dw_conv_block) if input_channels == output_channels and self.use_residual else dw_conv_block
                 )
             )
             # for step 1:
@@ -168,6 +180,12 @@ class Yoho(LM):
 
     def forward(self, input):
         x = input.float()
+        if self.use_leaf:
+            assert x.shape == (1, int(hp.window_len_secs * hp.sample_rate))
+            x = torch.unsqueeze(x, 0)
+            x = self.leaf(x) # (1, 40, 256)
+            x = torch.transpose(x, 1, 2) # (1, 256, 40)
+
         x = F.pad(x, self.block_first_padding)
         if self.use_rectangular:
             x = self.rect_filters(x)
@@ -182,9 +200,8 @@ class Yoho(LM):
         for i, block in enumerate(self.blocks_depthwise):
             x = F.pad(x, self.blocks_depthwise_padding[i])
             x = block(x)
-            if i==1 and self.use_mva:
+            if i == 1 and self.use_mva:
                 x = self.mva(x)
-
 
         batch_size, channels, height, width = x.size()
         x = torch.permute(x, (0, 1, 3, 2)).reshape(

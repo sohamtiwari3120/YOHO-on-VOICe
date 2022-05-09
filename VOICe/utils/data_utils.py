@@ -1,3 +1,4 @@
+from re import S
 import librosa
 import pytorch_lightning as pl
 import csv
@@ -409,9 +410,14 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec
 
     for i, (audio_win, label) in enumerate(zip(audio_windows, labels)):
         if save_logmelspec:
-            logmelspec = get_log_melspectrogram(audio_win).T
-            np.save(os.path.join(logmel_path,
-                    f'logmelspec-{i}.npy'), logmelspec)
+            if hp.use_leaf:
+                np.save(os.path.join(logmel_path,
+                                     f'audio_wav-{i}.npy'), logmelspec)
+            else:
+                logmelspec = get_log_melspectrogram(audio_win).T
+                np.save(os.path.join(logmel_path,
+                                     f'logmelspec-{i}.npy'), logmelspec)
+
         if save_labels:
             np.save(os.path.join(label_path, f'label-{i}.npy'), label)
 
@@ -444,7 +450,8 @@ class VOICeDataset(Dataset):
             self.mode, self.env)
         self.spec_transform = spec_transform
 
-        self.logmel_npy = glob.glob(self.logmel_path+f'/logmelspec-*.npy')
+        regex = f'/audio_wav-*.npy' if hp.use_leaf else f'/logmelspec-*.npy'
+        self.logmel_npy = glob.glob(self.logmel_path+regex)
         sort_nicely(self.logmel_npy)
         self.label_npy = glob.glob(self.label_path+f'/label-*.npy')
         sort_nicely(self.label_npy)
@@ -508,7 +515,7 @@ class VOICeDataModule(pl.LightningDataModule):
         self.test_spec_transform = test_spec_transform
 
         self.num_workers = num_workers
-        
+
         self.g = torch.Generator()
         self.g.manual_seed(hp.seed)
 
@@ -525,11 +532,11 @@ class VOICeDataModule(pl.LightningDataModule):
         if stage == "test" or stage is None:
             self.voice_test = VOICeDataset(
                 'test', self.env, self.test_spec_transform)
-                
+
     def seed_worker(self, worker_id):
         worker_seed = torch.initial_seed() % 2**32
         np.random.seed(worker_seed)
-        random.seed(worker_seed)    
+        random.seed(worker_seed)
 
     def train_dataloader(self):
         return DataLoader(self.voice_train, batch_size=self.batch_size, shuffle=self.train_shuffle, num_workers=self.num_workers, generator=self.g, worker_init_fn=self.seed_worker)
