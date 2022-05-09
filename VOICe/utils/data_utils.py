@@ -409,6 +409,7 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec
 
     for i, (audio_win, label) in enumerate(zip(audio_windows, labels)):
         if save_logmelspec:
+            print(f"hp.use_leaf {hp.use_leaf}")
             if hp.use_leaf:
                 np.save(os.path.join(logmel_path,
                                      f'audio_wav-{i}.npy'), logmelspec)
