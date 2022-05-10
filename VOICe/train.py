@@ -28,6 +28,7 @@ from utils.data_utils import VOICeDataModule  # NOQA
 
 @logger.catch
 def pytorch(args):
+    use_leaf = args.use_leaf
     env = args.env
     expt_name = args.expt_name
     date_today = datetime.today().strftime('%d%m%Y')
@@ -50,7 +51,7 @@ def pytorch(args):
     else:
         if args.model_name == "Yoho":
             model = lightning_model_class(use_cbam=args.use_cbam, use_pna=args.use_pna, use_ufo=args.use_ufo, use_mva=args.use_mva,
-                       use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual, use_rectangular=args.use_rectangular)
+                                          use_mish_activation=args.use_mish_activation, use_serf_activation=args.use_serf_activation, use_patches=args.use_patches, use_residual=args.use_residual, use_rectangular=args.use_rectangular, use_leaf=use_leaf)
         elif args.model_name == "VOICeCoAtNet":
             model = lightning_model_class(use_cbam=args.use_cbam)
         else:
@@ -75,7 +76,9 @@ def pytorch(args):
 
     if args.model_summary:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        summary(model.to(device), (1, hp.input_height, hp.input_width))
+        shape = (1, int(hp.input_height * hp.input_width)
+                 ) if use_leaf else (1, hp.input_height, hp.input_width)
+        summary(model.to(device), shape)
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     earlystopping = EarlyStopping(
@@ -161,6 +164,7 @@ if __name__ == '__main__':
     parser.add_argument('-nwb', '--no_wandb', action="store_true")
     parser.add_argument('-indt', '--indeterministic', action="store_true")
     parser.add_argument('-rect', '--use_rectangular', action="store_true")
+    parser.add_argument('-leaf', '--use_leaf', action="store_true")
 
     args = parser.parse_args()
     eval(args.backend)(args)
