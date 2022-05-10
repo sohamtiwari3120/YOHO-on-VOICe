@@ -36,6 +36,7 @@ def compute_conv_transpose_kernel_size(input_dim: int, output_dim: int, stride: 
         output_padding[0]+output_padding[1])+1))//dilation)+1
     return kernel_size
 
+
 def compute_conv_kernel_size(input_dim: int, output_dim: int, stride: int = 1, padding: Union[int, Tuple[int, int]] = 0, dilation: int = 1) -> int:
     """Compute the kernel size for convolution along a particular dim for obtaining the desired output_dim given the input_dim and other associated parameters.
 
@@ -52,9 +53,11 @@ def compute_conv_kernel_size(input_dim: int, output_dim: int, stride: int = 1, p
     if isinstance(padding, int):
         padding = [padding] * 2
 
-    kernel_size = (((output_dim - 1) * stride) + 1 - padding[0] - input_dim - padding[1])//(-dilation) + 1
+    kernel_size = (((output_dim - 1) * stride) + 1 -
+                   padding[0] - input_dim - padding[1])//(-dilation) + 1
 
     return int(kernel_size)
+
 
 def compute_kernel_size_auto(input_dim: int, output_dim: int) -> int:
     """Given input and output lengths along a particular input dim, automatically selects whether to perform normal or transpose convolution and returns appropriate kernel size for the same.
@@ -65,16 +68,19 @@ def compute_kernel_size_auto(input_dim: int, output_dim: int) -> int:
 
     Returns:
         int: kernel size along desired dim/axis for either normal or transposed convolution.
-    """    
+    """
     if input_dim == output_dim:
         kernel_size = 1
     elif input_dim < output_dim:
         # need to perform transposed convolution
-        kernel_size = compute_conv_transpose_kernel_size(input_dim=input_dim, output_dim=output_dim)
+        kernel_size = compute_conv_transpose_kernel_size(
+            input_dim=input_dim, output_dim=output_dim)
     else:
         # need to perform normal convolution
-        kernel_size = compute_conv_kernel_size(input_dim=input_dim, output_dim=output_dim)
+        kernel_size = compute_conv_kernel_size(
+            input_dim=input_dim, output_dim=output_dim)
     return int(kernel_size)
+
 
 def compute_conv_output_dim(input_dim: int, padding: Union[int, str, Tuple[int, int]] = 'valid', dilation: int = 1, kernel: int = 1, stride: int = 1) -> int:
     """Auxiliary function to help calculate the resulting dimension after performing the convolution operation.
@@ -250,8 +256,9 @@ def predict_audio_path(model, audio_path: str, channels_last: bool = False):
                             for audio_win in audio_wins])  # (N, H, W, C)
         logmels = np.expand_dims(logmels, axis=3)
     else:
-        logmels = np.array([get_log_melspectrogram(audio_win).T[None, :]
-                            for audio_win in audio_wins])  # (N, C, H, W)
+        logmels = np.array([audio_win[None, :]
+                            for audio_win in audio_wins]) if hp.use_leaf else np.array([get_log_melspectrogram(audio_win).T[None, :]
+                                                                                        for audio_win in audio_wins])  # (N, C, H, W)
     preds = model.predict(logmels)
     if not isinstance(preds, np.ndarray):
         preds = preds.cpu().numpy()
@@ -398,10 +405,12 @@ def serf(input):
     Applies the log-Softplus ERror activation Function (serf) element-wise:
         serf(x) = x * erf(ln(1+e^x))
     '''
-    return input * torch.erf(torch.log(1+torch.exp(input))) # use torch.sigmoid to make sure that we created the most
+    return input * torch.erf(torch.log(1+torch.exp(input)))  # use torch.sigmoid to make sure that we created the most
 
 # create a class wrapper from PyTorch nn.Module, so
 # the function now can be easily used in models
+
+
 class Serf(nn.Module):
     '''
     Applies the log-Softplus ERror activation Function (serf) element-wise:
@@ -418,17 +427,19 @@ class Serf(nn.Module):
         >>> input = torch.randn(2)
         >>> output = m(input)
     '''
+
     def __init__(self):
         '''
         Init method.
         '''
-        super().__init__() # init the base class
+        super().__init__()  # init the base class
 
     def forward(self, input):
         '''
         Forward pass of the function.
         '''
-        return serf(input) # simply apply already implemented Serf
+        return serf(input)  # simply apply already implemented Serf
+
 
 class Residual(nn.Module):
     def __init__(self, func) -> None:
@@ -438,16 +449,20 @@ class Residual(nn.Module):
     def forward(self, x):
         return x + self.func(x)
 
+
 class RectangularKernels(nn.Module):
     def __init__(self, input_height: int = hp.input_height) -> None:
         super().__init__()
         self.input_height = input_height
 
         self.filter1 = nn.Conv2d(1, 1, (3, 3), padding='same')
-        self.filter2 = nn.Conv2d(1, 1, (self.input_height*1//4, 3), padding='same')
-        self.filter3 = nn.Conv2d(1, 1, (self.input_height*2//4, 3), padding='same')
-        self.filter4 = nn.Conv2d(1, 1, (self.input_height*3//4, 3), padding='same')
-    
+        self.filter2 = nn.Conv2d(
+            1, 1, (self.input_height*1//4, 3), padding='same')
+        self.filter3 = nn.Conv2d(
+            1, 1, (self.input_height*2//4, 3), padding='same')
+        self.filter4 = nn.Conv2d(
+            1, 1, (self.input_height*3//4, 3), padding='same')
+
     def forward(self, input):
         out1 = self.filter1(input)
         out2 = self.filter2(input)
