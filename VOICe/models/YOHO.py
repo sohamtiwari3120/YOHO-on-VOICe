@@ -47,6 +47,8 @@ class Yoho(LM):
         if self.use_leaf:
             self.leaf = Leaf(n_filters=hp.n_mels,
                              sample_rate=hp.sample_rate,
+                             #             window_len = hp.mel_win_len,
+                             #             window_stride = 9,
                              init_min_freq=hp.fmin,
                              init_max_freq=hp.fmax)
 
@@ -181,9 +183,10 @@ class Yoho(LM):
     def forward(self, input):
         x = input.float()
         if self.use_leaf:
-            assert x.shape[-2:] == (1, int(hp.window_len_secs * hp.sample_rate))
-            x = self.leaf(x) # (1, 40, 256)
-            x = torch.transpose(x, 1, 2) # (1, 256, 40)
+            assert x.shape[-2:] == (1,
+                                    int(hp.window_len_secs * hp.sample_rate))
+            x = self.leaf(x)  # (1, 40, 256)
+            x = torch.transpose(x, 1, 2)  # (1, 256, 40)
 
         x = F.pad(x, self.block_first_padding)
         if self.use_rectangular:
