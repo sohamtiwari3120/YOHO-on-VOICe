@@ -182,7 +182,6 @@ class Yoho(LM):
         x = input.float()
         if self.use_leaf:
             assert x.shape[-2:] == (1, int(hp.window_len_secs * hp.sample_rate))
-            x = torch.unsqueeze(x, 1)
             x = self.leaf(x) # (1, 40, 256)
             x = torch.transpose(x, 1, 2) # (1, 256, 40)
 
