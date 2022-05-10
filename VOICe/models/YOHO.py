@@ -185,8 +185,9 @@ class Yoho(LM):
         if self.use_leaf:
             assert x.shape[-2:] == (1,
                                     int(hp.window_len_secs * hp.sample_rate))
-            x = self.leaf(x)  # (1, 40, 256)
-            x = torch.transpose(x, 1, 2)  # (1, 256, 40)
+            x = self.leaf(x)  # (40, 256)
+            x = torch.transpose(x, 1, 2)  # (256, 40)
+            x = torch.unsqueeze(x, 1)
 
         x = F.pad(x, self.block_first_padding)
         if self.use_rectangular:
