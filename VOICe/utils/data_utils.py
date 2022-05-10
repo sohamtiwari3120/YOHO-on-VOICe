@@ -412,7 +412,7 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec
             print(f"hp.use_leaf {hp.use_leaf}")
             if hp.use_leaf:
                 np.save(os.path.join(logmel_path,
-                                     f'audio_wav-{i}.npy'), logmelspec)
+                                     f'audio_wav-{i}.npy'), audio_win)
             else:
                 logmelspec = get_log_melspectrogram(audio_win).T
                 np.save(os.path.join(logmel_path,
