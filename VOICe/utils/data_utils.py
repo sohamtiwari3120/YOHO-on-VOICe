@@ -428,7 +428,7 @@ class VOICeDataset(Dataset):
     """Custom PyTorch Dataset class for VOICe dataset.
     """
 
-    def __init__(self, mode: str, env: str, spec_transform=False):
+    def __init__(self, mode: str, env: str, spec_transform=False, use_leaf: bool = hp.use_leaf):
         """Initialises the VOICe dataset class to load data for given mode and env. (the logmel_path and label_path variables are env and mode specific.)
 
         Args:
@@ -449,8 +449,9 @@ class VOICeDataset(Dataset):
         self.logmel_path, self.label_path = get_logmel_label_paths(
             self.mode, self.env)
         self.spec_transform = spec_transform
-
-        regex = f'/audio_wav-*.npy' if hp.use_leaf else f'/logmelspec-*.npy'
+        self.use_leaf = use_leaf
+        regex = f'/audio_wav-*.npy' if self.use_leaf else f'/logmelspec-*.npy'
+        print(self.logmel_path+regex)
         self.logmel_npy = glob.glob(self.logmel_path+regex)
         sort_nicely(self.logmel_npy)
         self.label_npy = glob.glob(self.label_path+f'/label-*.npy')
@@ -463,6 +464,8 @@ class VOICeDataset(Dataset):
         # to convert (H, W) -> (C, H, W)
         try:
             X = np.load(self.logmel_npy[idx])[None, :]
+            if self.use_leaf:
+                print(f"use_leaf: {X.shape}")
             # (channels=1, height, width)
             y = np.load(self.label_npy[idx])
 
