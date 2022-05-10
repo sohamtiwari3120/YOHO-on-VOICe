@@ -13,11 +13,11 @@ def main(args):
         logger.info(f'First converting all audios to mono.')
         convert_to_mono()
         logger.info(f'Finished conversion to mono audio.')
+    logger.info(f"use_leaf = {hp.use_leaf}")
     for mode in args.data_modes:
         for env in args.envs:
             logger.info(f'Processing {mode}, {env} data.')
             audio_windows, labels = generate_windows_and_anns(mode, env)
-            logger.info(f"use_leaf = {hp.use_leaf}")
             logmel_path, label_path = save_logmelspec_and_labels(mode, env, audio_windows, labels)
             logger.info(f'For mode:{mode}, env:{env}')
             logger.info(f'Saved spectrograms in path: {logmel_path}')

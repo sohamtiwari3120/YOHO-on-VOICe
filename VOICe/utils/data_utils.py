@@ -464,8 +464,6 @@ class VOICeDataset(Dataset):
         # to convert (H, W) -> (C, H, W)
         try:
             X = np.load(self.logmel_npy[idx])[None, :]
-            if self.use_leaf:
-                print(f"use_leaf: {X.shape}")
             # (channels=1, height, width)
             y = np.load(self.label_npy[idx])
 
