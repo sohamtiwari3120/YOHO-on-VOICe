@@ -78,6 +78,7 @@ def pytorch(args):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         shape = (1, int(hp.input_height * hp.input_width)
                  ) if use_leaf else (1, hp.input_height, hp.input_width)
+        print(shape)
         summary(model.to(device), shape)
 
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
