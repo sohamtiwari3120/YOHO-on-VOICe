@@ -176,9 +176,10 @@ class Yoho(LM):
             InitializedConv1d(int(output_width * num_channels_last_depthwise),
                               3*self.num_classes, 1)
         )
-        if output_height != hp.num_subwindows:
+        if output_height != hp.num_subwindows or self.use_leaf:
+            inp_dim = 8 if self.use_leaf else int(output_height)
             self.make_dim_num_sw = nn.Conv1d(
-                int(output_height), hp.num_subwindows, 1)
+                inp_dim, hp.num_subwindows, 1)
 
     def forward(self, input):
         x = input.float()
