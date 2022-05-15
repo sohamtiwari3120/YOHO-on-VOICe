@@ -1,5 +1,3 @@
-from mimetypes import init
-from traceback import print_tb
 from dotenv import load_dotenv
 load_dotenv() #loading environment variables
 import os
@@ -186,7 +184,7 @@ class hparams:
         self.output_embedding: bool = False
     
         # CBAM
-        self.use_cbam = True
+        self.use_cbam = False
         self.cbam_channels = 64
         self.cbam_reduction_factor = 4
         self.cbam_kernel_size = 7
@@ -202,7 +200,13 @@ class hparams:
         self.vit_emb_dropout=0.
 
         # LEAF Frontend
-        self.use_leaf = True
+        self.use_leaf = False
+
+        # FDY-SED
+        self.use_fdy = True
+        self.n_basis_kernels = 4
+        self.temperature = 31
+        self.pool_dim = "time" #FDY, for TDY use "freq"
 
 class YOHO_hparams(hparams):
     def __init__(self) -> None:
@@ -239,6 +243,7 @@ class YOHO_hparams(hparams):
         self.use_residual = False
 
         self.use_rectangular = False
+
 
 
 

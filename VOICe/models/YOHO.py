@@ -1,6 +1,3 @@
-from audioop import add
-from matplotlib.style import use
-from numpy import double
 import torch
 from torch.nn import functional as F
 from torch import nn
@@ -9,7 +6,7 @@ from utils.types import depthwise_layers_type
 from utils.pl_utils import LM
 from models.attention.CBAM import CBAMBlock
 from config import YOHO_hparams, add_EAP_to_path, add_leaf_to_path
-from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf, Residual, RectangularKernels
+from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf, Residual, RectangularKernels, Dynamic_conv2d
 add_EAP_to_path()
 add_leaf_to_path()
 from leaf_pytorch.frontend import Leaf  # NOQA
@@ -31,7 +28,7 @@ class Yoho(LM):
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation,
                  use_residual: bool = hp.use_residual,
-                 use_rectangular: bool = hp.use_rectangular, use_leaf: bool = hp.use_leaf,
+                 use_rectangular: bool = hp.use_rectangular, use_leaf: bool = hp.use_leaf, use_fdy: bool = hp.use_fdy,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -43,12 +40,16 @@ class Yoho(LM):
         output_width = self.input_width
         output_height = self.input_height
 
+        self.use_fdy = use_fdy
+        if self.use_fdy:
+            self.conv2d = Dynamic_conv2d
+        else:
+            self.conv2d = InitializedConv2d
+
         self.use_leaf = use_leaf
         if self.use_leaf:
             self.leaf = Leaf(n_filters=hp.n_mels,
                              sample_rate=hp.sample_rate,
-                             #             window_len = hp.mel_win_len,
-                             #             window_stride = 9,
                              init_min_freq=hp.fmin,
                              init_max_freq=hp.fmax)
 
@@ -71,14 +72,14 @@ class Yoho(LM):
         if self.use_patches:
             self.block_first = nn.Sequential(
                 # making patches of input image
-                InitializedConv2d(4 if self.use_rectangular else 1,
+                self.conv2d(4 if self.use_rectangular else 1,
                                   32, (3, 3), stride=3, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
             )
         else:
             self.block_first = nn.Sequential(
-                InitializedConv2d(4 if self.use_rectangular else 1,
+                self.conv2d(4 if self.use_rectangular else 1,
                                   32, (3, 3), stride=2, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
@@ -142,7 +143,7 @@ class Yoho(LM):
                 (padding_left_right[0], padding_left_right[1], padding_top_bottom[0], padding_top_bottom[1]))
 
             dw_conv_block = nn.Sequential(
-                InitializedConv2d(input_channels, output_channels,
+                self.conv2d(input_channels, output_channels,
                                   (1, 1), 1, padding=0, bias=False),  # step 2
                 InitializedBatchNorm2d(output_channels, eps=1e-4),
                 activation(),
@@ -151,7 +152,7 @@ class Yoho(LM):
 
             self.blocks_depthwise.append(
                 nn.Sequential(
-                    InitializedConv2d(input_channels, input_channels, kernel_size, stride=stride,
+                    self.conv2d(input_channels, input_channels, kernel_size, stride=stride,
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     activation(),
