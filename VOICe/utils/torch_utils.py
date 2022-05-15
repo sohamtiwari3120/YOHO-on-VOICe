@@ -532,7 +532,7 @@ class Dynamic_conv2d(nn.Module):
 
         self.in_planes = in_planes
         self.out_planes = out_planes
-        self.kernel_size = kernel_size
+        self.kernel_size = kernel_size[0] if type(kernel_size)=='tuple' else kernel_size
         self.stride = stride
         self.padding = padding
         self.pool_dim = pool_dim
