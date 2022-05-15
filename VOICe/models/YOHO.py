@@ -152,7 +152,7 @@ class Yoho(LM):
 
             self.blocks_depthwise.append(
                 nn.Sequential(
-                    self.conv2d(input_channels, input_channels, kernel_size, stride=stride,
+                    InitializedConv2d(input_channels, input_channels, kernel_size, stride=stride,
                                       padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     activation(),
