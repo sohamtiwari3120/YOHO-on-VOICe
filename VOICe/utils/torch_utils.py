@@ -3,7 +3,7 @@ import os
 import numpy as np
 import torch
 from torch import nn
-import torch.functional as F
+import torch.nn.functional as F
 from config import hparams
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
