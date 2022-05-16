@@ -206,7 +206,7 @@ class hparams:
         self.use_fdy = True
         self.n_basis_kernels = 4
         self.temperature = 31
-        self.pool_dim = "time" #FDY, for TDY use "freq"
+        self.pool_dim = "freq" #FDY, for TDY use "freq"
 
 class YOHO_hparams(hparams):
     def __init__(self) -> None:
