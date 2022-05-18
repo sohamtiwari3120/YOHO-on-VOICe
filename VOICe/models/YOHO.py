@@ -73,14 +73,14 @@ class Yoho(LM):
         if self.use_patches:
             self.block_first = nn.Sequential(
                 # making patches of input image
-                self.conv2d(4 if self.use_rectangular else 1,
+                InitializedConv2d(4 if self.use_rectangular else 1,
                                   32, (3, 3), stride=3, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
             )
         else:
             self.block_first = nn.Sequential(
-                self.conv2d(4 if self.use_rectangular else 1,
+                InitializedConv2d(4 if self.use_rectangular else 1,
                                   32, (3, 3), stride=2, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
