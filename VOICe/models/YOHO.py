@@ -28,7 +28,7 @@ class Yoho(LM):
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation,
                  use_residual: bool = hp.use_residual,
-                 use_rectangular: bool = hp.use_rectangular, use_leaf: bool = hp.use_leaf, use_fdy: bool = hp.use_fdy,
+                 use_rectangular: bool = hp.use_rectangular, use_leaf: bool = hp.use_leaf, use_fdy: bool = hp.use_fdy, use_tdy: bool = hp.use_tdy,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -41,7 +41,8 @@ class Yoho(LM):
         output_height = self.input_height
 
         self.use_fdy = use_fdy
-        if self.use_fdy:
+        self.use_tdy = use_tdy
+        if self.use_fdy or self.use_tdy:
             self.conv2d = Dynamic_conv2d
         else:
             self.conv2d = InitializedConv2d
