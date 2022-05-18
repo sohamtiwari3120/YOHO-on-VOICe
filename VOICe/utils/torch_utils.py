@@ -534,7 +534,7 @@ class Dynamic_conv2d(nn.Module):
 
         self.in_planes = in_planes
         self.out_planes = out_planes
-        self.kernel_size = [kernel_size, kernel_size] if type(kernel_size)=='int' else kernel_size
+        self.kernel_size = kernel_size if type(kernel_size)=='int' else kernel_size[0]
         self.groups = groups
         self.stride = stride
         self.padding = padding
@@ -544,7 +544,7 @@ class Dynamic_conv2d(nn.Module):
         self.attention = attention2d(in_planes, self.kernel_size, self.stride, self.padding, n_basis_kernels,
                                      temperature, pool_dim)
 
-        self.weight = nn.Parameter(torch.randn(n_basis_kernels, out_planes, in_planes//self.groups, self.kernel_size[0], self.kernel_size[1]),
+        self.weight = nn.Parameter(torch.randn(n_basis_kernels, out_planes, in_planes//self.groups, self.kernel_size, self.kernel_size),
                                    requires_grad=True)
 
         if bias:
@@ -565,7 +565,7 @@ class Dynamic_conv2d(nn.Module):
 
         batch_size = x.size(0)
 
-        aggregate_weight = self.weight.view(-1, self.in_planes//self.groups, self.kernel_size[0], self.kernel_size[1]) # size : [n_ker * out_chan, in_chan]
+        aggregate_weight = self.weight.view(-1, self.in_planes//self.groups, self.kernel_size, self.kernel_size) # size : [n_ker * out_chan, in_chan]
 
         if self.bias is not None:
             aggregate_bias = self.bias.view(-1)
