@@ -526,13 +526,16 @@ class attention2d(nn.Module):
         return F.softmax(x / self.temperature, 1)
 
 class Dynamic_conv2d(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size, stride=1, padding=0, bias=False, n_basis_kernels=hp.n_basis_kernels,
+    """To perform Frequency Dynamic Convolution or Time Dynamic Convolution.
+    """    
+    def __init__(self, in_planes, out_planes, kernel_size, groups=1, stride=1, padding=0, bias=False, n_basis_kernels=hp.n_basis_kernels,
                  temperature=hp.temperature, pool_dim=hp.pool_dim):
         super(Dynamic_conv2d, self).__init__()
 
         self.in_planes = in_planes
         self.out_planes = out_planes
-        self.kernel_size = kernel_size if type(kernel_size)=='int' else kernel_size[0]
+        self.kernel_size = [kernel_size, kernel_size] if type(kernel_size)=='int' else kernel_size
+        self.groups = groups
         self.stride = stride
         self.padding = padding
         self.pool_dim = pool_dim
@@ -541,7 +544,7 @@ class Dynamic_conv2d(nn.Module):
         self.attention = attention2d(in_planes, self.kernel_size, self.stride, self.padding, n_basis_kernels,
                                      temperature, pool_dim)
 
-        self.weight = nn.Parameter(torch.randn(n_basis_kernels, out_planes, in_planes, self.kernel_size, self.kernel_size),
+        self.weight = nn.Parameter(torch.randn(n_basis_kernels, out_planes, in_planes//self.groups, self.kernel_size[0], self.kernel_size[1]),
                                    requires_grad=True)
 
         if bias:
@@ -562,13 +565,13 @@ class Dynamic_conv2d(nn.Module):
 
         batch_size = x.size(0)
 
-        aggregate_weight = self.weight.view(-1, self.in_planes, self.kernel_size, self.kernel_size) # size : [n_ker * out_chan, in_chan]
+        aggregate_weight = self.weight.view(-1, self.in_planes//self.groups, self.kernel_size[0], self.kernel_size[1]) # size : [n_ker * out_chan, in_chan]
 
         if self.bias is not None:
             aggregate_bias = self.bias.view(-1)
-            output = F.conv2d(x, weight=aggregate_weight, bias=aggregate_bias, stride=self.stride, padding=self.padding)
+            output = F.conv2d(x, weight=aggregate_weight, bias=aggregate_bias, stride=self.stride, padding=self.padding, groups=self.groups)
         else:
-            output = F.conv2d(x, weight=aggregate_weight, bias=None, stride=self.stride, padding=self.padding)
+            output = F.conv2d(x, weight=aggregate_weight, bias=None, stride=self.stride, padding=self.padding, groups=self.groups)
             # output size : [bs, n_ker * out_chan, frames, freqs]
 
         output = output.view(batch_size, self.n_basis_kernels, self.out_planes, output.size(-2), output.size(-1))
