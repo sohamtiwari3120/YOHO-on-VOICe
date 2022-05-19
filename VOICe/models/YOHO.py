@@ -80,7 +80,7 @@ class Yoho(LM):
             )
         else:
             self.block_first = nn.Sequential(
-                InitializedConv2d(4 if self.use_rectangular else 1,
+                self.conv2d(4 if self.use_rectangular else 1,
                                   32, (3, 3), stride=2, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
