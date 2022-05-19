@@ -205,7 +205,7 @@ class hparams:
         # FDY-SED
         self.use_fdy = True
         self.use_tdy = False
-        self.n_basis_kernels = 4
+        self.n_basis_kernels = 16
         self.temperature = 31
         if self.use_fdy:
             self.pool_dim = "time" #FDY use "time", for TDY use "freq"
