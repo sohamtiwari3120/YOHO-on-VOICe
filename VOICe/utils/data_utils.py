@@ -476,8 +476,8 @@ class VOICeDataset(Dataset):
                 X = X.astype(float)
             return X, y
         except Exception as e:
-            print(f'Trying to load {self.logmel_npy[idx]}')
-            raise Exception(f'{e} - Trying to load {self.logmel_npy[idx]}')
+            print(f'Trying to load {idx} - {len(self.logmel_npy)} - {self.logmel_npy[idx]}')
+            raise Exception(f'{e} - Trying to load {idx} - {len(self.logmel_npy)} - {len(self.label_npy)} - {self.logmel_npy[idx]}')
 
 
 class VOICeDataModule(pl.LightningDataModule):
