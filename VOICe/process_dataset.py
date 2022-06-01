@@ -18,6 +18,10 @@ def main(args):
         for env in args.envs:
             logger.info(f'Processing {mode}, {env} data.')
             audio_windows, labels = generate_windows_and_anns(mode, env)
+            print("len(audio_windows)", len(audio_windows))
+            print("len(labels)", len(labels))
+            print("hp.save_labels", hp.save_labels)
+            print("hp.save_logmelspec", hp.save_logmelspec)
             logmel_path, label_path = save_logmelspec_and_labels(mode, env, audio_windows, labels)
             logger.info(f'For mode:{mode}, env:{env}')
             logger.info(f'Saved spectrograms in path: {logmel_path}')
