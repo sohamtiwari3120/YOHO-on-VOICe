@@ -407,7 +407,7 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec
     os.makedirs(logmel_path, exist_ok=True)
     os.makedirs(label_path, exist_ok=True)
 
-    for i, (audio_win, label) in enumerate(zip(audio_windows, labels)):
+    for i, (audio_win, label) in tqdm(enumerate(zip(audio_windows, labels))):
         if save_logmelspec:
             # print(f"hp.use_leaf {hp.use_leaf}")
             if hp.use_leaf:
