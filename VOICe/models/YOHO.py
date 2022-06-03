@@ -7,6 +7,7 @@ from utils.pl_utils import LM
 from models.attention.CBAM import CBAMBlock
 from config import YOHO_hparams, add_EAP_to_path, add_leaf_to_path
 from utils.torch_utils import compute_conv_output_dim, compute_padding_along_dim, InitializedBatchNorm2d, InitializedKerv2d, InitializedConv2d, InitializedConv1d, Serf, Residual, RectangularKernels, Dynamic_conv2d
+from utils.data_augment import filt_aug
 add_EAP_to_path()
 add_leaf_to_path()
 from leaf_pytorch.frontend import Leaf  # NOQA
@@ -29,6 +30,7 @@ class Yoho(LM):
                  use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation,
                  use_residual: bool = hp.use_residual,
                  use_rectangular: bool = hp.use_rectangular, use_leaf: bool = hp.use_leaf, use_fdy: bool = hp.use_fdy, use_tdy: bool = hp.use_tdy,
+                 use_filt_aug: bool = hp.use_filt_aug,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -37,6 +39,7 @@ class Yoho(LM):
         self.input_height = input_height
         self.input_width = input_width
         self.use_mish_activation = use_mish_activation
+        self.use_filt_aug = use_filt_aug
         output_width = self.input_width
         output_height = self.input_height
 
@@ -74,14 +77,14 @@ class Yoho(LM):
             self.block_first = nn.Sequential(
                 # making patches of input image
                 self.conv2d(4 if self.use_rectangular else 1,
-                                  32, (3, 3), stride=3, bias=False),
+                            32, (3, 3), stride=3, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
             )
         else:
             self.block_first = nn.Sequential(
                 self.conv2d(4 if self.use_rectangular else 1,
-                                  32, (3, 3), stride=2, bias=False),
+                            32, (3, 3), stride=2, bias=False),
                 InitializedBatchNorm2d(32, eps=1e-4),
                 activation()
             )
@@ -145,7 +148,7 @@ class Yoho(LM):
 
             dw_conv_block = nn.Sequential(
                 self.conv2d(input_channels, output_channels,
-                                  (1, 1), 1, padding=0, bias=False),  # step 2
+                            (1, 1), 1, padding=0, bias=False),  # step 2
                 InitializedBatchNorm2d(output_channels, eps=1e-4),
                 activation(),
                 nn.Dropout2d(0.1),
@@ -154,7 +157,7 @@ class Yoho(LM):
             self.blocks_depthwise.append(
                 nn.Sequential(
                     self.conv2d(input_channels, input_channels, kernel_size, stride=stride,
-                                      padding=0, groups=input_channels, bias=False),  # step 1
+                                padding=0, groups=input_channels, bias=False),  # step 1
                     InitializedBatchNorm2d(input_channels, eps=1e-4),
                     activation(),
                     Residual(
@@ -188,6 +191,11 @@ class Yoho(LM):
         if self.use_leaf:
             x = self.leaf(x)  # (40, 256)
             x = torch.transpose(x, 1, 2)  # (256, 40)
+            x = torch.unsqueeze(x, 1)
+
+        if self.use_filt_aug:
+            x = torch.squeeze(x)
+            x = filt_aug(x)
             x = torch.unsqueeze(x, 1)
 
         x = F.pad(x, self.block_first_padding)

@@ -212,6 +212,13 @@ class hparams:
         elif self.use_tdy:
             self.pool_dim = "freq" 
 
+        # Filter Aug
+        self.use_filt_aug = True
+        self.db_range=[-6, 6]
+        self.n_band=[3, 6]
+        self.min_bw=6
+        self.filter_type="linear" # "linear" | "step" | 0<=float<=1, "step"*float, "linear"*(1-float)
+
 class YOHO_hparams(hparams):
     def __init__(self) -> None:
         super().__init__()
