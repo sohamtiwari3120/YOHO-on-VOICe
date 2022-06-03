@@ -30,7 +30,6 @@ class Yoho(LM):
                  use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation,
                  use_residual: bool = hp.use_residual,
                  use_rectangular: bool = hp.use_rectangular, use_leaf: bool = hp.use_leaf, use_fdy: bool = hp.use_fdy, use_tdy: bool = hp.use_tdy,
-                 use_filt_aug: bool = hp.use_filt_aug,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -39,7 +38,6 @@ class Yoho(LM):
         self.input_height = input_height
         self.input_width = input_width
         self.use_mish_activation = use_mish_activation
-        self.use_filt_aug = use_filt_aug
         output_width = self.input_width
         output_height = self.input_height
 
@@ -191,11 +189,6 @@ class Yoho(LM):
         if self.use_leaf:
             x = self.leaf(x)  # (40, 256)
             x = torch.transpose(x, 1, 2)  # (256, 40)
-            x = torch.unsqueeze(x, 1)
-
-        if self.use_filt_aug:
-            x = torch.squeeze(x)
-            x = filt_aug(x)
             x = torch.unsqueeze(x, 1)
 
         x = F.pad(x, self.block_first_padding)

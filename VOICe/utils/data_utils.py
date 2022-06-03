@@ -12,6 +12,7 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 from subprocess import Popen, PIPE
+from utils.data_augment import filt_aug
 from config import hparams
 from tqdm import tqdm
 from utils.types import file_paths_type
@@ -377,7 +378,8 @@ def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows):
         os.path.dirname(__file__)), 'data')
     folder_path = os.path.join(
         base_dir, f'{hp.snr}-mono', f'{mode}-data', env)
-    logmel_path = os.path.join(folder_path, 'audio_wavs' if hp.use_leaf else 'logmels_npy')
+    logmel_path = os.path.join(
+        folder_path, 'audio_wavs' if hp.use_leaf else 'logmels_npy')
     label_path = os.path.join(
         folder_path, 'labels_npy', f'num_subwindows={num_subwindows}')
     return logmel_path, label_path
@@ -428,7 +430,7 @@ class VOICeDataset(Dataset):
     """Custom PyTorch Dataset class for VOICe dataset.
     """
 
-    def __init__(self, mode: str, env: str, spec_transform=False, use_leaf: bool = hp.use_leaf):
+    def __init__(self, mode: str, env: str, spec_transform=False, use_leaf: bool = hp.use_leaf, use_filt_aug: bool = hp.use_filt_aug):
         """Initialises the VOICe dataset class to load data for given mode and env. (the logmel_path and label_path variables are env and mode specific.)
 
         Args:
@@ -467,17 +469,22 @@ class VOICeDataset(Dataset):
             # (channels=1, height, width)
             y = np.load(self.label_npy[idx])
 
-            if self.spec_transform and self.mode == 'training':
-                X = spec_augment_pytorch.spec_augment(torch.tensor(X), time_warping_para=hp.time_warping_para, frequency_masking_para=hp.frequency_masking_para,
-                                                      time_masking_para=hp.time_masking_para, frequency_mask_num=hp.frequency_mask_num, time_mask_num=hp.time_mask_num)
+            if self.mode == 'training':
+                if self.spec_transform:
+                    X = spec_augment_pytorch.spec_augment(torch.tensor(X), time_warping_para=hp.time_warping_para, frequency_masking_para=hp.frequency_masking_para,
+                                                          time_masking_para=hp.time_masking_para, frequency_mask_num=hp.frequency_mask_num, time_mask_num=hp.time_mask_num)
+                elif self.use_filt_aug:
+                    X = filt_aug(X)
             if isinstance(X, torch.Tensor):
                 X = X.float()
             elif isinstance(X, np.ndarray):
                 X = X.astype(float)
             return X, y
         except Exception as e:
-            print(f'Trying to load {idx} - {len(self.logmel_npy)} - {self.logmel_npy[idx]}')
-            raise Exception(f'{e} - Trying to load {idx} - {len(self.logmel_npy)} - {len(self.label_npy)} - {self.logmel_npy[idx]}')
+            print(
+                f'Trying to load {idx} - {len(self.logmel_npy)} - {self.logmel_npy[idx]}')
+            raise Exception(
+                f'{e} - Trying to load {idx} - {len(self.logmel_npy)} - {len(self.label_npy)} - {self.logmel_npy[idx]}')
 
 
 class VOICeDataModule(pl.LightningDataModule):
