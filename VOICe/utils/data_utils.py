@@ -452,6 +452,7 @@ class VOICeDataset(Dataset):
             self.mode, self.env)
         self.spec_transform = spec_transform
         self.use_leaf = use_leaf
+        self.use_filt_aug = use_filt_aug
         regex = f'/audio_wav-*.npy' if self.use_leaf else f'/logmelspec-*.npy'
         print(self.logmel_path+regex)
         self.logmel_npy = glob.glob(self.logmel_path+regex)
@@ -474,7 +475,9 @@ class VOICeDataset(Dataset):
                     X = spec_augment_pytorch.spec_augment(torch.tensor(X), time_warping_para=hp.time_warping_para, frequency_masking_para=hp.frequency_masking_para,
                                                           time_masking_para=hp.time_masking_para, frequency_mask_num=hp.frequency_mask_num, time_mask_num=hp.time_mask_num)
                 elif self.use_filt_aug:
+                    X = torch.tensor(X)
                     X = filt_aug(X)
+                
             if isinstance(X, torch.Tensor):
                 X = X.float()
             elif isinstance(X, np.ndarray):
