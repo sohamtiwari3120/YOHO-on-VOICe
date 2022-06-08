@@ -41,8 +41,8 @@ class hparams:
         # loading audiofiles
         self.snr = '9dB'
         self.sample_rate = 16000
-        self.window_len_secs = 2.56 * self.sample_rate / 44100
-        self.hop_len_secs = 1.96 * self.sample_rate / 44100
+        self.window_len_secs = 2.56 
+        self.hop_len_secs = 1.96 
         self.max_consecutive_event_silence = 0.3
         self.num_subwindows = 9
     
@@ -51,8 +51,8 @@ class hparams:
         self.save_labels: bool = True
     
         # dataset melspec
-        self.mel_hop_len = 441
-        self.mel_win_len = 1764
+        self.mel_hop_len = int(441 * self.sample_rate / 44100)
+        self.mel_win_len = int(1764 * self.sample_rate / 44100)
         self.n_fft = 2048
         self.n_mels = 40
         self.fmin = 0
