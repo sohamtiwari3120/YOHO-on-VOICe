@@ -256,7 +256,7 @@ def get_model_compatible_anns(events, window_len_secs=hp.window_len_secs, num_su
                 labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
                        * 3 + 3] = [1, start_time_2, bin_length]
 
-                if stop_time_2 > 0.0:
+                if stop_time_2 > 0.0 and stop_bin != 9:
                     labels[stop_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
                            * 3 + 3] = [1, 0.0, stop_time_2]
 
