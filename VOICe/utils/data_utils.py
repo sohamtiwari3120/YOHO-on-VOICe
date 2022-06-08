@@ -98,7 +98,8 @@ def construct_audio_windows(audio_path, sample_rate=hp.sample_rate, window_len_s
 
     a, sr = sf.read(audio_path)
     if sr != sample_rate:
-        print(f'sr={sr}hz does not match sample_rate={sample_rate}hz for audio: {audio_path}!')
+        print(
+            f'sr={sr}hz does not match sample_rate={sample_rate}hz for audio: {audio_path}!')
         print(f'Resampling from orig sr = {sr} to target sr = {sample_rate}')
         a = librosa.resample(a, sr, sample_rate)
     if a.shape[0] < win_len:
@@ -231,41 +232,48 @@ def get_model_compatible_anns(events, window_len_secs=hp.window_len_secs, num_su
     labels = np.zeros((num_subwindows, len(hp.class_dict.keys()) * 3))
 
     for e in events:
+        try:
+            start_time = float(e[0])
+            stop_time = float(e[1])
 
-        start_time = float(e[0])
-        stop_time = float(e[1])
+            start_bin = int(start_time // bin_length)
+            stop_bin = int(stop_time // bin_length)
 
-        start_bin = int(start_time // bin_length)
-        stop_bin = int(stop_time // bin_length)
+            if start_bin == 9:
+                print("skipping, start_bin = 9", e)
+                continue
 
-        start_time_2 = round(start_time - start_bin * bin_length, 3)
-        stop_time_2 = round(stop_time - stop_bin * bin_length, 3)
+            start_time_2 = start_time - start_bin * bin_length
+            stop_time_2 = stop_time - stop_bin * bin_length
 
-        n_bins = stop_bin - start_bin
+            n_bins = stop_bin - start_bin
 
-        if n_bins == 0:
-            labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
-                   * 3 + 3] = [1, start_time_2, stop_time_2]
+            if n_bins == 0:
+                labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
+                       * 3 + 3] = [1, start_time_2, stop_time_2]
 
-        elif n_bins == 1:
-            labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
-                   * 3 + 3] = [1, start_time_2, bin_length]
+            elif n_bins == 1:
+                labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
+                       * 3 + 3] = [1, start_time_2, bin_length]
 
-            if stop_time_2 > 0.0:
-                labels[stop_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
-                       * 3 + 3] = [1, 0.0, stop_time_2]
+                if stop_time_2 > 0.0:
+                    labels[stop_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
+                           * 3 + 3] = [1, 0.0, stop_time_2]
 
-        elif n_bins > 1:
-            labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
-                   * 3 + 3] = [1, start_time_2, bin_length]
+            elif n_bins > 1:
+                labels[start_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
+                       * 3 + 3] = [1, start_time_2, bin_length]
 
-            for i in range(1, n_bins):
-                labels[start_bin + i, hp.class_dict[e[2]] *
-                       3:hp.class_dict[e[2]] * 3 + 3] = [1, 0.0, bin_length]
+                for i in range(1, n_bins):
+                    labels[start_bin + i, hp.class_dict[e[2]] *
+                           3:hp.class_dict[e[2]] * 3 + 3] = [1, 0.0, bin_length]
 
-            if stop_time_2 > 0.0:
-                labels[stop_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
-                       * 3 + 3] = [1, 0.0, stop_time_2]
+                if stop_time_2 > 0.0 and stop_bin != 9:
+                    labels[stop_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
+                           * 3 + 3] = [1, 0.0, stop_time_2]
+        except Exception as e:
+            print(start_time, stop_time, start_bin, stop_bin, n_bins, start_time_2, stop_time_2)
+            raise e
 
     # labels[:, [1, 2, 4, 5]] /= bin_length => normalising values
 
@@ -364,7 +372,7 @@ def process_audio_file(audio_path):
     return audio_wins, window_ranges, all_anns, all_model_compatible_anns
 
 
-def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows, sample_rate = hp.sample_rate):
+def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows, sample_rate=hp.sample_rate):
     """A function to simply return folder dirpaths where logmelspectrogram and label npy files will be stores.
 
     Args:
@@ -387,7 +395,7 @@ def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows, s
     return logmel_path, label_path
 
 
-def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec: bool = hp.save_logmelspec, save_labels: bool = hp.save_labels, sample_rate = hp.sample_rate):
+def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec: bool = hp.save_logmelspec, save_labels: bool = hp.save_labels, sample_rate=hp.sample_rate):
     """To save the generated logmelspecs and compatible annotations in npy format.
 
     Args:
@@ -479,7 +487,7 @@ class VOICeDataset(Dataset):
                 elif self.use_filt_aug:
                     X = torch.tensor(X)
                     X = filt_aug(X)
-                
+
             if isinstance(X, torch.Tensor):
                 X = X.float()
             elif isinstance(X, np.ndarray):
