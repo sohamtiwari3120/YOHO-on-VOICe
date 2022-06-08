@@ -362,7 +362,7 @@ def process_audio_file(audio_path):
     return audio_wins, window_ranges, all_anns, all_model_compatible_anns
 
 
-def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows):
+def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows, sample_rate = hp.sample_rate):
     """A function to simply return folder dirpaths where logmelspectrogram and label npy files will be stores.
 
     Args:
@@ -377,7 +377,7 @@ def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows):
     base_dir = os.path.join(os.path.dirname(
         os.path.dirname(__file__)), 'data')
     folder_path = os.path.join(
-        base_dir, f'{hp.snr}-mono', f'{mode}-data', env)
+        base_dir, f'{hp.snr}-mono', f'{mode}-data', env, f"sample_rate={sample_rate}")
     logmel_path = os.path.join(
         folder_path, 'audio_wavs' if hp.use_leaf else 'logmels_npy')
     label_path = os.path.join(
@@ -385,7 +385,7 @@ def get_logmel_label_paths(mode, env, num_subwindows: int = hp.num_subwindows):
     return logmel_path, label_path
 
 
-def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec: bool = hp.save_logmelspec, save_labels: bool = hp.save_labels):
+def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec: bool = hp.save_logmelspec, save_labels: bool = hp.save_labels, sample_rate = hp.sample_rate):
     """To save the generated logmelspecs and compatible annotations in npy format.
 
     Args:
@@ -405,7 +405,7 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec
     if mode not in data_modes:
         raise Exception('Invalid data mode.')
 
-    logmel_path, label_path = get_logmel_label_paths(mode, env)
+    logmel_path, label_path = get_logmel_label_paths(mode, env, sample_rate)
     os.makedirs(logmel_path, exist_ok=True)
     os.makedirs(label_path, exist_ok=True)
 

@@ -41,8 +41,8 @@ class hparams:
         # loading audiofiles
         self.snr = '9dB'
         self.sample_rate = 44100
-        self.window_len_secs = 2.56
-        self.hop_len_secs = 1.96
+        self.window_len_secs = 2.56 * self.sample_rate / 44100
+        self.hop_len_secs = 1.96 * self.sample_rate / 44100
         self.max_consecutive_event_silence = 0.3
         self.num_subwindows = 9
     
