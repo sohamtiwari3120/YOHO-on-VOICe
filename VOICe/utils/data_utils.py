@@ -98,9 +98,6 @@ def construct_audio_windows(audio_path, sample_rate=hp.sample_rate, window_len_s
 
     a, sr = sf.read(audio_path)
     if sr != sample_rate:
-        print(
-            f'sr={sr}hz does not match sample_rate={sample_rate}hz for audio: {audio_path}!')
-        print(f'Resampling from orig sr = {sr} to target sr = {sample_rate}')
         a = librosa.resample(a, sr, sample_rate)
     if a.shape[0] < win_len:
         a_padded = np.zeros((win_len, ))
