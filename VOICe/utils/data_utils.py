@@ -272,7 +272,8 @@ def get_model_compatible_anns(events, window_len_secs=hp.window_len_secs, num_su
                     labels[stop_bin, hp.class_dict[e[2]] * 3:hp.class_dict[e[2]]
                            * 3 + 3] = [1, 0.0, stop_time_2]
         except Exception as e:
-            print(start_time, stop_time, start_bin, stop_bin, n_bins, start_time_2, stop_time_2)
+            print(start_time, stop_time, start_bin, stop_bin,
+                  n_bins, start_time_2, stop_time_2)
             raise e
 
     # labels[:, [1, 2, 4, 5]] /= bin_length => normalising values
@@ -415,7 +416,8 @@ def save_logmelspec_and_labels(mode, env, audio_windows, labels, save_logmelspec
     if mode not in data_modes:
         raise Exception('Invalid data mode.')
 
-    logmel_path, label_path = get_logmel_label_paths(mode, env, sample_rate)
+    logmel_path, label_path = get_logmel_label_paths(
+        mode, env, sample_rate=sample_rate)
     os.makedirs(logmel_path, exist_ok=True)
     os.makedirs(label_path, exist_ok=True)
 
