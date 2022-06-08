@@ -238,8 +238,8 @@ def get_model_compatible_anns(events, window_len_secs=hp.window_len_secs, num_su
         start_bin = int(start_time // bin_length)
         stop_bin = int(stop_time // bin_length)
 
-        start_time_2 = start_time - start_bin * bin_length
-        stop_time_2 = stop_time - stop_bin * bin_length
+        start_time_2 = round(start_time - start_bin * bin_length, 3)
+        stop_time_2 = round(stop_time - stop_bin * bin_length, 3)
 
         n_bins = stop_bin - start_bin
 
