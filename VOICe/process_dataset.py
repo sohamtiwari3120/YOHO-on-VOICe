@@ -22,6 +22,7 @@ def main(args):
             print("len(labels)", len(labels))
             print("hp.save_labels", hp.save_labels)
             print("hp.save_logmelspec", hp.save_logmelspec)
+            print("hp.sample_rate", hp.sample_rate)
             logmel_path, label_path = save_logmelspec_and_labels(mode, env, audio_windows, labels)
             logger.info(f'For mode:{mode}, env:{env}')
             logger.info(f'Saved spectrograms in path: {logmel_path}')
