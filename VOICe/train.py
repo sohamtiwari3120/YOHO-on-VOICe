@@ -73,6 +73,8 @@ def pytorch(args):
         wandb_logger.experiment.config.update(
             hp.__dict__, allow_val_change=True)
         wandb_logger.experiment.config.update(args, allow_val_change=True)
+        wandb_logger.experiment.define_metric("f1", summary='max')
+        wandb_logger.experiment.define_metric("error_rate", summary='min')
         wandb_logger.watch(model)
 
     if args.model_summary:
