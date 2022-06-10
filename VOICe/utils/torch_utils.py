@@ -324,11 +324,13 @@ class MonitorSedF1Callback(Callback):
                 self.best_f1 = curr_f1
                 trainer.save_checkpoint(os.path.join(
                     self.model_ckpt_folder_path, f"model-{self.model_name}-{self.env}-best-f1.ckpt"))
+                self.log("max_f1", self.best_f1)
 
             if curr_error < self.best_error:
                 self.best_error = curr_error
                 trainer.save_checkpoint(os.path.join(
                     self.model_ckpt_folder_path, f"model-{self.model_name}-{self.env}-best-error.ckpt"))
+                self.log("min_error_rate", self.best_error)
 
             print("F-measure: {:.3f} vs {:.3f}".format(curr_f1, self.best_f1))
             print("Error rate: {:.3f} vs {:.3f}".format(
