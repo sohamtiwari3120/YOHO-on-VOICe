@@ -39,7 +39,7 @@ class hparams:
         self.num_classes = len(self.rev_class_dict)
     
         # loading audiofiles
-        self.snr = '9dB'
+        self.snr = '3dB'
         self.sample_rate = 16000
         self.window_len_secs = 2.56 
         self.hop_len_secs = 1.96 
