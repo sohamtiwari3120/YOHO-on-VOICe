@@ -150,6 +150,7 @@ class Yoho(LM):
                 InitializedBatchNorm2d(output_channels, eps=1e-4),
                 activation(),
                 nn.Dropout2d(0.1),
+                CBAMBlock(channel=self.cbam_channels, reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size) if self.use_cbam else nn.Identity(),
                 ParNetAttention(channel=output_channels) if self.use_pna else nn.Identity())
 
             self.blocks_depthwise.append(
