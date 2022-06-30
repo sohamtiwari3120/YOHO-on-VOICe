@@ -2,6 +2,7 @@ from typing import Any
 import torch
 from torch import nn
 from utils.torch_utils import compute_conv_kernel_size
+from utils.pl_utils import LM
 from models.attention.CBAM import CBAMBlock
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
@@ -149,7 +150,7 @@ class ViT(nn.Module):
         return x
 
 
-class VOICeViT(nn.Module):
+class VOICeViT(LM):
     """ConvNeXt Model with output linear layer
     """
 
