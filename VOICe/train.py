@@ -56,7 +56,7 @@ def pytorch(args):
         elif args.model_name == "VOICeCoAtNet":
             model = lightning_model_class(use_cbam=args.use_cbam)
         else:
-            model = LM(eval(args.model_name)(use_cbam=args.use_cbam))
+            model = lightning_model_class(use_cbam=args.use_cbam)
         logger.info(f'Starting a fresh model.')
         logger.info(f'use_cbam = {args.use_cbam}')
 
