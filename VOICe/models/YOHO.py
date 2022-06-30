@@ -29,7 +29,7 @@ class Yoho(LM):
                  use_cbam: bool = hp.use_cbam, cbam_channels: int = hp.cbam_channels, cbam_reduction_factor: int = hp.cbam_reduction_factor, cbam_kernel_size: int = hp.cbam_kernel_size,
                  use_patches: bool = hp.use_patches, use_ufo: bool = hp.use_ufo, use_pna: bool = hp.use_pna, use_mva: bool = hp.use_mva, use_mish_activation: bool = hp.use_mish_activation, use_serf_activation: bool = hp.use_serf_activation,
                  use_residual: bool = hp.use_residual,
-                 use_rectangular: bool = hp.use_rectangular, use_leaf: bool = hp.use_leaf, use_fdy: bool = hp.use_fdy, use_tdy: bool = hp.use_tdy,
+                 use_rectangular: bool = hp.use_rectangular, use_leaf: bool = hp.use_leaf, use_fdy: bool = hp.use_fdy, use_tdy: bool = hp.use_tdy, use_kerv: bool = hp.use_kerv,
                  *args: Any, **kwargs: Any) -> None:
 
         super(Yoho, self).__init__(*args, **kwargs)
@@ -43,8 +43,11 @@ class Yoho(LM):
 
         self.use_fdy = use_fdy
         self.use_tdy = use_tdy
+        self.use_kerv = use_kerv
         if self.use_fdy or self.use_tdy:
             self.conv2d = Dynamic_conv2d
+        elif self.use_kerv:
+            self.conv2d = InitializedKerv2d
         else:
             self.conv2d = InitializedConv2d
 
@@ -150,7 +153,8 @@ class Yoho(LM):
                 InitializedBatchNorm2d(output_channels, eps=1e-4),
                 activation(),
                 nn.Dropout2d(0.1),
-                CBAMBlock(channel=output_channels, reduction=self.cbam_reduction_factor, kernel_size=self.cbam_kernel_size) if self.use_cbam else nn.Identity(),
+                CBAMBlock(channel=output_channels, reduction=self.cbam_reduction_factor,
+                          kernel_size=self.cbam_kernel_size) if self.use_cbam else nn.Identity(),
                 ParNetAttention(channel=output_channels) if self.use_pna else nn.Identity())
 
             self.blocks_depthwise.append(

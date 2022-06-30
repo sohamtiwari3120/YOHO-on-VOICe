@@ -108,6 +108,7 @@ class hparams:
         self.target_envs = self.envs
         self.data_modes = ['training', 'test', 'validation']
         # kervolutional
+        self.use_kerv = False
         self.kernel_modes = ['linear', 'polynomial', 'gaussian']
 
         # TENSORFLOW
