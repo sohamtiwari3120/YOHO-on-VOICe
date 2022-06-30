@@ -6,6 +6,7 @@ from torch import nn
 import torch.nn.functional as F
 from models.YOHO import Yoho
 from utils.torch_utils import compute_kernel_size_auto
+from utils.pl_utils import LM
 from config import hparams
 import traceback
 from models.attention.CBAM import CBAMBlock
@@ -208,7 +209,7 @@ class Tag(nn.Module):
         return output
 
 
-class VOICePANN(nn.Module):
+class VOICePANN(LM):
     """ConvNeXt Model with output linear layer
     """
 
@@ -332,7 +333,7 @@ class VOICePANN(nn.Module):
         return x
 
 
-class VOICePANNYoho(nn.Module):
+class VOICePANNYoho(LM):
     """ConvNeXt Model with output linear layer
     """
 
