@@ -90,7 +90,7 @@ def pytorch(args):
     torch.use_deterministic_algorithms(not args.indeterministic)
     trainer = Trainer(callbacks=[MonitorSedF1Callback(
         env, expt_folder), lr_monitor, earlystopping], devices=hp.devices, accelerator=hp.accelerator, gradient_clip_val=hp.gradient_clip_val, logger=tb_logger if args.no_wandb else wandb_logger, profiler='simple', deterministic=not args.indeterministic)
-    voice_dm = VOICeDataModule(env)
+    voice_dm = VOICeDataModule(env, use_filt_aug=args.use_filt_aug)
 
     if args.auto_lr:
         logger.info(f'Starting auto lr find of model for {env} audio.')
@@ -169,6 +169,7 @@ if __name__ == '__main__':
     parser.add_argument('-rect', '--use_rectangular', action="store_true")
     parser.add_argument('-leaf', '--use_leaf', action="store_true")
     parser.add_argument('-fdy', '--use_fdy', action="store_true")
+    parser.add_argument('-filt', '--use_filt_aug', action="store_true")
     parser.add_argument('-tdy', '--use_tdy', action="store_true")
 
     args = parser.parse_args()

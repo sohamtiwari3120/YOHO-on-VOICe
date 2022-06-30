@@ -503,7 +503,7 @@ class VOICeDataModule(pl.LightningDataModule):
     """PyTorch-Lightning data module for VOICe dataset.
     """
 
-    def __init__(self, env: str, batch_size: int = hp.batch_size, train_shuffle: bool = hp.train_shuffle, val_shuffle: bool = hp.val_shuffle, test_shuffle: bool = hp.test_shuffle, train_spec_transform: bool = hp.train_spec_transform, val_spec_transform: bool = hp.val_spec_transform, test_spec_transform: bool = hp.test_spec_transform, num_workers: int = hp.num_workers):
+    def __init__(self, env: str, batch_size: int = hp.batch_size, train_shuffle: bool = hp.train_shuffle, val_shuffle: bool = hp.val_shuffle, test_shuffle: bool = hp.test_shuffle, train_spec_transform: bool = hp.train_spec_transform, val_spec_transform: bool = hp.val_spec_transform, test_spec_transform: bool = hp.test_spec_transform, num_workers: int = hp.num_workers, use_filt_aug: bool = hp.use_filt_aug):
         """PyTorch Lightning Custom LightninDataModule for VOICe Dataset
 
         Args:
@@ -533,7 +533,7 @@ class VOICeDataModule(pl.LightningDataModule):
         self.train_spec_transform = train_spec_transform
         self.val_spec_transform = val_spec_transform
         self.test_spec_transform = test_spec_transform
-
+        self.use_filt_aug = use_filt_aug
         self.num_workers = num_workers
 
         self.g = torch.Generator()
@@ -544,14 +544,14 @@ class VOICeDataModule(pl.LightningDataModule):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
             self.voice_train = VOICeDataset(
-                'training', self.env, self.train_spec_transform)
+                'training', self.env, self.train_spec_transform, use_filt_aug=self.use_filt_aug)
             self.voice_val = VOICeDataset(
-                'validation', self.env, self.val_spec_transform)
+                'validation', self.env, self.val_spec_transform, use_filt_aug=self.use_filt_aug)
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
             self.voice_test = VOICeDataset(
-                'test', self.env, self.test_spec_transform)
+                'test', self.env, self.test_spec_transform, use_filt_aug=self.use_filt_aug)
 
     def seed_worker(self, worker_id):
         worker_seed = torch.initial_seed() % 2**32
