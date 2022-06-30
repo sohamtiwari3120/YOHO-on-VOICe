@@ -183,7 +183,7 @@ class hparams:
         self.pann_encoder_ckpt_path_cnn10 = f'/notebooks/YOHO/YOHO-on-VOICe/VOICe/models/Cnn10_mAP0.380.pth'
         self.pann_encoder_ckpt_path_cnn14 = f'/notebooks/YOHO/YOHO-on-VOICe/VOICe/models/Cnn14_mAP=0.431.pth'
         self.pann_versions = ["Cnn10", "Cnn14"]
-        self.pann_version = self.pann_versions[1]
+        self.pann_version = self.pann_versions[0]
         # CNN 10
         self.output_embedding: bool = False
 
