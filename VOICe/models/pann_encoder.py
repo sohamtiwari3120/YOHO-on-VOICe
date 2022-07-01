@@ -370,8 +370,6 @@ class VOICePANNYoho(LM):
                 random_inp = torch.rand(
                     (1, self.input_height, 64))
                 output = self.pann(random_inp)
-                print("00000000000000000000000000000000")
-                print(output.size())
                       
                 self.pann_batch_size = output.size(1)
                 self.pann_output_height = output.size(2)
@@ -401,9 +399,6 @@ class VOICePANNYoho(LM):
                 self.pann_output_width, hp.input_width))
             kernel_reduce_height_to_num_subwindows = (compute_kernel_size_auto(
                 self.pann_output_height, hp.input_height), 1)
-            print("111111111111111111111111111111111111111111111111111111111111111111")
-            print(kernel_reduce_width_to_num_classes)
-            print(kernel_reduce_height_to_num_subwindows)
             if self.pann_version == 'Cnn10':
                 self.intermediate_layer = nn.Sequential(
                     nn.ConvTranspose2d(
