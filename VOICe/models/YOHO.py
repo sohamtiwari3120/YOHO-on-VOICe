@@ -46,8 +46,6 @@ class Yoho(LM):
         self.use_kerv = use_kerv
         if self.use_fdy or self.use_tdy:
             self.conv2d = Dynamic_conv2d
-        elif self.use_kerv:
-            self.conv2d = InitializedKerv2d
         else:
             self.conv2d = InitializedConv2d
 
